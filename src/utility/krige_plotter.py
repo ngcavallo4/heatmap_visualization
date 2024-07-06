@@ -119,7 +119,7 @@ class KrigingPlotter():
             x, y, stiff, title = csvparser.access_data(request)
             krige_model = KrigeModel(x, y, stiff, self.bin_num, self.length_scale)
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
-            model, r2 = krige_model.create_model('Linear')
+            model, r2 = krige_model.create_model(model_type.name)
             krige_model.organize_kriging_area(match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
             z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
 
