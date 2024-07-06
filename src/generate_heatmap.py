@@ -1,7 +1,7 @@
 from utility.krige_plotter import KrigingPlotter
 
-# Notice! You should be in /kriging when running your code, and your csv
-# files should live in /kriging/data. Otherwise, the code will not run. 
+# Notice! You should be in /heatmap_visualization when running your code, and your csv
+# files should live in /heatmap_visualization/data. Otherwise, the code will not run. 
 
 def main():
 

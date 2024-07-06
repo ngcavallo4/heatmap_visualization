@@ -3,6 +3,9 @@ from utility.krige_model import KrigeModel
 from matplotlib import ticker
 from utility.parse_csv import CSVParser
 from gstools import Linear
+import matplotlib as mpl
+import numpy as np 
+from matplotlib import colors
 
 class KrigingPlotter():
 
@@ -88,7 +91,7 @@ class KrigingPlotter():
         # ax1.tick_params(axis='both', which='major', labelsize=7)
         ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        self.fig.colorbar(im1, ax=ax1, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
+        cbar1 =self.fig.colorbar(im1, ax=ax1, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
 
         ax2 = self.axs[1]
         im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
@@ -99,16 +102,20 @@ class KrigingPlotter():
         # ax2.tick_params(axis='both', which='major', labelsize=7)
         ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax2.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        self.fig.colorbar(im2, ax=ax2, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
+        cbar2 = self.fig.colorbar(im2, ax=ax2, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
         plt.tight_layout()
         plt.show()
 
     
     def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None): 
 
-        request_dict = {'0':0, '1':1, '2':2, '3':3,'all':4}
+        request_dict = {'0':0, '1':1, '2':2, '3':3, 'all':4}
+
+        z_pred_list = []
+        var_list = []
+        kriging_results = {}
         
-        for (request, axs_index) in request_dict.items():
+        for request in request_dict.keys():
             x, y, stiff, title = csvparser.access_data(request)
             krige_model = KrigeModel(x, y, stiff, self.bin_num, self.length_scale)
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
@@ -116,11 +123,20 @@ class KrigingPlotter():
             krige_model.organize_kriging_area(match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
             z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
 
+            z_pred_list.append(z_pred)
+            var_list.append(var)
+            kriging_results[request] = (z_pred, var, x, y, stiff, title, model, x_interpolation_range, y_interpolation_range)
+
+        zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
+
+        for request, (z_pred, var, x, y, stiff, title, model, x_interpolation_range, y_interpolation_range) in kriging_results.items():
+
             font = {'size': 7}
             plt.rc('font', **font)
 
-            ax1 = self.axs[0, axs_index]
+            ax1 = self.axs[0, request_dict[request]]
             im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+            im1.norm.autoscale([zmin,zmax])
             ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
             ax1.set_title(f'Kriging Interpolation – {model.name} ' + title)
             ax1.ticklabel_format(useOffset=False)
@@ -130,9 +146,11 @@ class KrigingPlotter():
             ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             self.fig.colorbar(im1, ax=ax1, shrink=0.7)# format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
+            im1.set_clim(0, None)
 
-            ax2 = self.axs[1, axs_index]
+            ax2 = self.axs[1, request_dict[request]]
             im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+            im2.norm.autoscale([var_min,var_max])
             ax2.set_title(f'Kriging Variance – {model.name} ' + title)
             ax2.ticklabel_format(useOffset=False)
             # ax2.set_xlabel('X pos', fontsize = 8)
@@ -164,3 +182,20 @@ class KrigingPlotter():
         ax.set_xlabel("Lag distance")
         ax.set_ylabel("Semivariogram")
         plt.tight_layout()
+
+    def get_global_color_limits(self, z_pred_list: list, var_list: list):
+
+        global_z_min = float('inf')
+        global_z_max = float('-inf')
+        global_v_min = float('inf')
+        global_v_max = float('-inf')
+
+        for z_pred in z_pred_list:
+            global_z_min = min(global_z_min, z_pred.min())
+            global_z_max = max(global_z_max, z_pred.max())
+
+        for var in var_list:
+            global_v_min = min(global_v_min, var.min())
+            global_v_max = max(global_v_max, var.max())
+
+        return global_z_min, global_z_max, global_v_min, global_v_max
