@@ -45,7 +45,7 @@ class KrigingPlotter():
         self.fig, self.axs = plt.subplots(self.nrows,self.ncols,figsize=(17,7))
         self.subplot_index = 1
     
-    def plot_heatmap(self, file: str, match_steps: bool, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None):
+    def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None):
         r"""Plots heatmap. Calls helper function based on which mode user
             decides upon initializing object – single leg or all legs.
 
@@ -64,7 +64,7 @@ class KrigingPlotter():
             x, y, stiff, title = csvparser.access_data(self.mode)
             self.plot_single_mode(x, y, stiff, title, match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
         elif self.mode == 'all':
-            self.plot_all_legs(csvparser, match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
+            self.plot_all_legs(csvparser, match_steps, match_scale, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
 
     def plot_single_mode(self, x, y, stiff,title, match_steps: bool, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None):
 
@@ -91,7 +91,7 @@ class KrigingPlotter():
         # ax1.tick_params(axis='both', which='major', labelsize=7)
         ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        cbar1 =self.fig.colorbar(im1, ax=ax1, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
+        plt.colorbar(im1, ax=ax1, shrink=0.5)
 
         ax2 = self.axs[1]
         im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
@@ -102,12 +102,12 @@ class KrigingPlotter():
         # ax2.tick_params(axis='both', which='major', labelsize=7)
         ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax2.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        cbar2 = self.fig.colorbar(im2, ax=ax2, format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.5)
+        plt.colorbar(im2, ax=ax2, shrink=0.5)
         plt.tight_layout()
         plt.show()
 
     
-    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None): 
+    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None): 
 
         request_dict = {'0':0, '1':1, '2':2, '3':3, 'all':4}
 
@@ -136,7 +136,9 @@ class KrigingPlotter():
 
             ax1 = self.axs[0, request_dict[request]]
             im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
-            im1.norm.autoscale([zmin,zmax])
+            
+            if match_scale:
+                im1.norm.autoscale([zmin,zmax])
             ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
             ax1.set_title(f'Kriging Interpolation – {model.name} ' + title)
             ax1.ticklabel_format(useOffset=False)
@@ -145,12 +147,12 @@ class KrigingPlotter():
             ax1.tick_params(axis='both', which='major', labelsize=7)
             ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-            self.fig.colorbar(im1, ax=ax1, shrink=0.7)# format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
-            im1.set_clim(0, None)
+            self.fig.colorbar(im1, ax=ax1, shrink=0.7) # format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
 
             ax2 = self.axs[1, request_dict[request]]
             im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
-            im2.norm.autoscale([var_min,var_max])
+            if match_scale:
+                im2.norm.autoscale([var_min,var_max])
             ax2.set_title(f'Kriging Variance – {model.name} ' + title)
             ax2.ticklabel_format(useOffset=False)
             # ax2.set_xlabel('X pos', fontsize = 8)

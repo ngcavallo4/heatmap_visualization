@@ -29,7 +29,7 @@ class KrigeModel():
             "Linear":gs.Linear,
             "Cubic":gs.Cubic,
             "TPLStable":gs.TPLStable,
-            "TPLSimple":gs.TPLSimple,
+            # "TPLSimple":gs.TPLSimple,
             "TPLExponential":gs.TPLExponential,
             "Gaussian":gs.Gaussian
         }

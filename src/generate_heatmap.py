@@ -6,6 +6,6 @@ from utility.krige_plotter import KrigingPlotter
 def main():
 
     plotter = KrigingPlotter('all', bin_num = 30)
-    plotter.plot_heatmap('log00-19_trans.csv', True)
+    plotter.plot_heatmap('log00-19_trans.csv', True, match_scale = False)
 
 main()
