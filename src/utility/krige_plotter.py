@@ -2,10 +2,7 @@ import matplotlib.pyplot as plt
 from utility.krige_model import KrigeModel
 from matplotlib import ticker
 from utility.parse_csv import CSVParser
-from gstools import Linear
-import matplotlib as mpl
 import numpy as np 
-from matplotlib import colors
 
 class KrigingPlotter():
 
@@ -19,7 +16,7 @@ class KrigingPlotter():
         bin_num: :class:`int`
             Number of bins for the estimated emperical variogram.
         length_scale: Optional, :class:`float`
-            Length scale of gstools variogram.
+            Length scale of GSTools variogram.
     """
 
     def __init__(self, mode, bin_num: int=30, length_scale: float=1.0):
@@ -36,16 +33,17 @@ class KrigingPlotter():
         """
 
         if self.mode == '0' or self.mode == '1' or self.mode == '2' or self.mode == '3':
-            self.nrows = 2
-            self.ncols = 1
+            nrows = 2
+            ncols = 1
         elif self.mode == 'all':
-            self.nrows = 2
-            self.ncols = 5
+            nrows = 2
+            ncols = 5
         
-        self.fig, self.axs = plt.subplots(self.nrows,self.ncols,figsize=(17,7))
-        self.subplot_index = 1
+        self.fig, self.axs = plt.subplots(nrows,ncols,figsize=(17,7))
     
-    def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False, x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
+    def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False,
+        x_interpolation_input_range: list[float] = None,
+        y_interpolation_input_range: list[float] = None):
         r"""Plots heatmap. Calls helper function based on which mode user
             decides upon initializing object – single leg or all legs.
 
@@ -54,27 +52,83 @@ class KrigingPlotter():
             file: :class:`str` 
                 Name of the csv file where the data is stored. This file should
                 be stored in /kriging/data.  
-
-            Rest of parameters to be reorganized.
+            match_steps: :class:`bool`
+                Boolean that determines whether the kriging area will be fitted
+                to match the input data. If False, user must input 
+                x and y_interpolation_input_range.
+            match_scale: :class:`bool`, optional
+                Boolean that determines whether the colorbar scale for the
+                interpolation plots will be consistent across images, and same
+                for the varance plots. Only matters if mode is 'all'. 
+            x_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
+            y_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
         """
         
         csvparser = CSVParser(file)
         
         if self.mode in ['0', '1', '2', '3']:
             x, y, stiff, title = csvparser.access_data(self.mode)
-            self.plot_single_mode(x, y, stiff, title, match_steps, x_interpolation_input_range=x_interpolation_input_range, y_interpolation_input_range=y_interpolation_input_range)
+            self.plot_single_mode(x, y, stiff, title, match_steps,
+                                    x_interpolation_input_range=x_interpolation_input_range,
+                                    y_interpolation_input_range=y_interpolation_input_range)
         elif self.mode == 'all':
-            self.plot_all_legs(csvparser, match_steps, match_scale, x_interpolation_input_range=x_interpolation_input_range, y_interpolation_input_range=y_interpolation_input_range)
+            self.plot_all_legs(csvparser, match_steps, match_scale,
+                                x_interpolation_input_range=x_interpolation_input_range, 
+                                y_interpolation_input_range=y_interpolation_input_range)
 
-    def plot_single_mode(self, x, y, stiff,title, match_steps: bool,  x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
+    def plot_single_mode(self, x: np.ndarray, y: np.ndarray, stiff: np.ndarray, title: str, match_steps: bool,
+                        x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
 
+        r"""Plots a single leg based on the passed in parameters x, y, stiff,
+            and title. 
+
+            Parameters
+            ----------
+            x: :class: `np.ndarray`
+                Array containing x-position data. 
+            y: :class: `np.ndarray`
+                Array containing y-position data. 
+            stiff: :class: `np.ndarray`
+                Array containing stiffness data.
+            title: :class:`str`
+                String indiciating which leg is being plotted. Autogenerated 
+                from the access_data function from the CSVParser class. 
+            match_steps: :class:`bool`
+                Boolean that determines whether the kriging area will be fitted
+                to match the input data. If False, user must input 
+                x and y_interpolation_input_range. Passed through from 
+                generate_heatmap.
+            match_scale: :class:`bool`, optional
+                Boolean that determines whether the colorbar scale for the
+                interpolation plots will be consistent across images, and same
+                for the varance plots. Only matters if mode is 'all'. Passed 
+                through from generate_heatmap.
+            x_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
+                Passed through from generate_heatmap.
+            y_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
+                Passed through from generate_heatmap.
+        """
         plt.figure(self.fig)
         krige_model = KrigeModel(x,y,stiff,self.bin_num, self.length_scale)
         model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
-        # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0],self.subplot_index, 20)
-        model, r2 = krige_model.create_model(model_type.name)
-        krige_model.organize_kriging_area(match_steps, x_interpolation_input_range, y_interpolation_input_range)
-        z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
+        # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
+        fitted_model, r2 = krige_model.fit_model(model_type.name)
+        krige_model.organize_kriging_area(match_steps, 
+                                    x_interpolation_input_range, 
+                                    y_interpolation_input_range)
+        z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model=fitted_model)
 
         font = {'size': 7}
 
@@ -82,7 +136,9 @@ class KrigingPlotter():
         plt.rc('font', **font)
 
         ax1 = self.axs[0]
-        im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+        im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
+                         extent=(x_interpolation_range[0], x_interpolation_range[1], 
+                                 y_interpolation_range[0], y_interpolation_range[1]))
         ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
         ax1.set_title(f'Kriging Interpolation – {model.name} ' + title)
         ax1.ticklabel_format(useOffset=False)
@@ -94,7 +150,9 @@ class KrigingPlotter():
         plt.colorbar(im1, ax=ax1, shrink=0.5)
 
         ax2 = self.axs[1]
-        im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+        im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
+                         extent=(x_interpolation_range[0], x_interpolation_range[1],
+                                y_interpolation_range[0], y_interpolation_range[1]))
         ax2.set_title(f'Kriging Variance – {model.name} ' + title)
         ax2.ticklabel_format(useOffset=False)
         # ax2.set_xlabel('X pos', fontsize = 8)
@@ -107,25 +165,64 @@ class KrigingPlotter():
         plt.show()
 
     
-    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False, x_interpolation_input_range: list = None, y_interpolation_input_range: list = None): 
+    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False,
+                        x_interpolation_input_range: list = None, 
+                        y_interpolation_input_range: list = None): 
+
+        r"""Plots all four legs individually and four legs together. 
+
+            Parameters
+            ----------
+            csvparser: :class:`CSVParser`
+                CSVParser object initialized with the filename from generate_
+                heatmap. 
+            match_steps: :class:`bool`
+                Boolean that determines whether the kriging area will be fitted
+                to match the input data. If False, user must input 
+                x and y_interpolation_input_range. Passed through from 
+                generate_heatmap.
+            match_scale: :class:`bool`, optional
+                Boolean that determines whether the colorbar scale for the
+                interpolation plots will be consistent across images, and same
+                for the varance plots. Only matters if mode is 'all'. Passed 
+                through from generate_heatmap.
+            x_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
+                Passed through from generate_heatmap.
+            y_interpolation_input_range: :class:`list[float]`, optional
+                Only necessary to provide if match_steps is False. This is a
+                array of length 2, where the 0th index is the lower bound
+                of the range, and the 1st index is the upper bound of the range.
+                Passed through from generate_heatmap.
+        """
 
         request_dict = {'0':0, '1':1, '2':2, '3':3, 'all':4}
 
         z_pred_list = []
         var_list = []
         kriging_results = {}
+
+        zpred_im_list = []
+        var_im_list = []
         
         for request in request_dict.keys():
             x, y, stiff, title = csvparser.access_data(request)
             krige_model = KrigeModel(x, y, stiff, self.bin_num, self.length_scale)
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
-            model, r2 = krige_model.create_model(model_type.name)
-            krige_model.organize_kriging_area(match_steps, x_interpolation_input_range, y_interpolation_input_range)
-            z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
+            # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
+            fitted_model, r2 = krige_model.fit_model(model_type.name)
+            krige_model.organize_kriging_area(match_steps, 
+                                              x_interpolation_input_range, 
+                                              y_interpolation_input_range)
+            z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)
 
             z_pred_list.append(z_pred)
             var_list.append(var)
-            kriging_results[request] = (z_pred, var, x, y, stiff, title, model, x_interpolation_range, y_interpolation_range)
+            kriging_results[request] = (z_pred, var, x, y, stiff, title, model,
+                                        x_interpolation_range,
+                                        y_interpolation_range)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
@@ -135,7 +232,9 @@ class KrigingPlotter():
             plt.rc('font', **font)
 
             ax1 = self.axs[0, request_dict[request]]
-            im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+            im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
+                             extent=(x_interpolation_range[0], x_interpolation_range[1],
+                                    y_interpolation_range[0], y_interpolation_range[1]))
             
             if match_scale:
                 im1.norm.autoscale([zmin,zmax])
@@ -150,7 +249,9 @@ class KrigingPlotter():
             self.fig.colorbar(im1, ax=ax1, shrink=0.7) # format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
 
             ax2 = self.axs[1, request_dict[request]]
-            im2 = ax2.imshow(var, origin='lower', cmap='viridis', extent=(x_interpolation_range[0], x_interpolation_range[1], y_interpolation_range[0], y_interpolation_range[1]))
+            im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
+                             extent=(x_interpolation_range[0], x_interpolation_range[1],
+                                      y_interpolation_range[0], y_interpolation_range[1]))
             if match_scale:
                 im2.norm.autoscale([var_min,var_max])
             ax2.set_title(f'Kriging Variance – {model.name} ' + title)
@@ -164,20 +265,56 @@ class KrigingPlotter():
 
         plt.tight_layout()
         plt.show()
-            
-    def plot_ranked_variogram(self, bin_center, gamma, models_dict, ax, subplot_index, vario_x_max: int=30):
-        # plt.figure(self.fig)
-        plt.subplot(self.nrows, self.ncols, subplot_index)
-        self.subplot_index += 1
-        plt.scatter(bin_center, gamma, color="k", label="data",)
-        plt.title("Variogam model comparison – 2 traversals")
-        plt.xlabel("Lag distance")
-        plt.ylabel("Semivariogram")
+
+
+
+
+# fig.colorbar(im, ax=axes.ravel().tolist())
+
+
+    def plot_ranked_variogram(self, bin_center, gamma, models_dict, ax, vario_x_max: float=30.0):
+        r"""Plots emperical variogram, and different variogram models fitted
+            to the empirical variogram. NOTE: Probably buggy. 
+
+            Parameters
+            ----------
+
+            bin_center: :class:`np.ndarray`
+                Bin centers as returned by gs.vario_estimate. 
+            gamma: :class:`np.ndarray`
+                Empirical semivariogram value as found by gs.vario_estimate.
+                Plotted against bin_center to make up empirical variogram
+                to be fitted against. 
+            models_dict: :class:`dict`
+                Dictionary of models to iterate through to find best fitting
+                model.
+            ax: :class:`mpl.Axes`   
+                Instance of mpl.Axes to be plotted on.
+            vario_x_max: :class:`float`, optional
+                X maximum for variogram plot, default is x = 30. 
+
+        """
+
+        plt.figure(self.fig)
+        ax.scatter(bin_center, gamma, color="k", label="data",)
+        ax.set_title("Variogam model comparison – 2 traversals")
+        ax.set_xlabel("Lag distance")
+        ax.set_ylabel("Semivariogram")
 
         for fit_model in models_dict.values():
             fit_model.plot(fig=self.fig,x_max=vario_x_max, ax=ax)
+        
+        plt.tight_layout()
 
     def plot_variogram(self, model, ax):
+        r"""Plot variogram based on passed in model.
+
+            Parameters
+            ----------
+
+            model: :class:`gs.CovModel` or CovModel wrapper
+                Variogram model to be plotted.
+        """
         plt.figure(self.fig)
         model.plot(ax=ax)
         ax.set_title(f"Fitted {model.name} Variogram")
@@ -185,7 +322,31 @@ class KrigingPlotter():
         ax.set_ylabel("Semivariogram")
         plt.tight_layout()
 
-    def get_global_color_limits(self, z_pred_list: list, var_list: list):
+    def get_global_color_limits(self, z_pred_list: list[np.ndarray], var_list: list[np.ndarray]):
+
+        r"""Calculates the global color minimum and maximum for both z_pred
+        and var based on outputs of every plot.
+
+            Parameters
+            ----------
+
+            z_pred_list: :class:`list[np.ndarray]`
+                List of each plot's interpolation array.
+            var_list: :class:`list[np.ndarray]`
+                List of each plot's variance array.
+            
+            Returns
+            -------
+
+            global_z_min: :class:`float`
+                Global interpolation minimum for colorbar.
+            global_z_max: :class:`float`
+                Global interpolation maximum for colorbar.
+            global_var_min: :class:`float`
+                Global variance minimum for colorbar.
+            global_var_max: :class:`float`
+                Global variance maximum for colorbar.
+        """
 
         global_z_min = float('inf')
         global_z_max = float('-inf')
