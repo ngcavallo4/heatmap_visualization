@@ -45,7 +45,7 @@ class KrigingPlotter():
         self.fig, self.axs = plt.subplots(self.nrows,self.ncols,figsize=(17,7))
         self.subplot_index = 1
     
-    def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None):
+    def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False, x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
         r"""Plots heatmap. Calls helper function based on which mode user
             decides upon initializing object – single leg or all legs.
 
@@ -62,18 +62,18 @@ class KrigingPlotter():
         
         if self.mode in ['0', '1', '2', '3']:
             x, y, stiff, title = csvparser.access_data(self.mode)
-            self.plot_single_mode(x, y, stiff, title, match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
+            self.plot_single_mode(x, y, stiff, title, match_steps, x_interpolation_input_range=x_interpolation_input_range, y_interpolation_input_range=y_interpolation_input_range)
         elif self.mode == 'all':
-            self.plot_all_legs(csvparser, match_steps, match_scale, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
+            self.plot_all_legs(csvparser, match_steps, match_scale, x_interpolation_input_range=x_interpolation_input_range, y_interpolation_input_range=y_interpolation_input_range)
 
-    def plot_single_mode(self, x, y, stiff,title, match_steps: bool, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None):
+    def plot_single_mode(self, x, y, stiff,title, match_steps: bool,  x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
 
         plt.figure(self.fig)
         krige_model = KrigeModel(x,y,stiff,self.bin_num, self.length_scale)
         model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
         # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0],self.subplot_index, 20)
         model, r2 = krige_model.create_model(model_type.name)
-        krige_model.organize_kriging_area(match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
+        krige_model.organize_kriging_area(match_steps, x_interpolation_input_range, y_interpolation_input_range)
         z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
 
         font = {'size': 7}
@@ -107,7 +107,7 @@ class KrigingPlotter():
         plt.show()
 
     
-    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False, x_interpolation_start: float=None, x_interpolation_stop: float=None, y_interpolation_start: float=None, y_interpolation_stop: float=None): 
+    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False, x_interpolation_input_range: list = None, y_interpolation_input_range: list = None): 
 
         request_dict = {'0':0, '1':1, '2':2, '3':3, 'all':4}
 
@@ -120,7 +120,7 @@ class KrigingPlotter():
             krige_model = KrigeModel(x, y, stiff, self.bin_num, self.length_scale)
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
             model, r2 = krige_model.create_model(model_type.name)
-            krige_model.organize_kriging_area(match_steps, x_interpolation_start, x_interpolation_stop, y_interpolation_start, y_interpolation_stop)
+            krige_model.organize_kriging_area(match_steps, x_interpolation_input_range, y_interpolation_input_range)
             z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(model)
 
             z_pred_list.append(z_pred)

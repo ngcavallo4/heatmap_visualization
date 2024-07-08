@@ -62,13 +62,13 @@ class KrigeModel():
         # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
         return fit_model, r2
 
-    def organize_kriging_area(self, match_steps: bool, x_interpolation_start = None, x_interpolation_stop = None, y_interpolation_start = None, y_interpolation_stop = None):
+    def organize_kriging_area(self, match_steps: bool, x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
 
         if match_steps:
             # If values are given, set those equal
-            if x_interpolation_start != None:
-                self.x_interpolation_range[0] = x_interpolation_start
-                self.y_interpolation_range[0]= y_interpolation_start
+            if x_interpolation_input_range is not None:
+                self.x_interpolation_range[0] = x_interpolation_input_range[0]
+                self.y_interpolation_range[0]= y_interpolation_input_range[0]
             else: # Else set values equal to minimum of steps 
                 self.x_interpolation_range[0] = np.min(self.x) - 0.1
                 self.y_interpolation_range[0] = np.min(self.y) - 0.1
@@ -78,13 +78,13 @@ class KrigeModel():
             self.y_interpolation_range[1] = np.max(self.y) + 0.1
         else: # If not match steps, then must pass in values
 
-            if x_interpolation_start == None or x_interpolation_stop is None or y_interpolation_start is None or y_interpolation_stop is None:
+            if x_interpolation_input_range is None or y_interpolation_input_range is None:
                 raise BaseException('Missing arguments. If match_steps is false, the four other arguments in organize_kriging_area are required.')
 
-            self.x_interpolation_range[0] = x_interpolation_start
-            self.x_interpolation_range[1] = x_interpolation_stop
-            self.y_interpolation_range[0]= y_interpolation_start
-            self.y_interpolation_range[1]= y_interpolation_stop
+            self.x_interpolation_range[0] = x_interpolation_input_range[0]
+            self.x_interpolation_range[1] = x_interpolation_input_range[1]
+            self.y_interpolation_range[0]= y_interpolation_input_range[0]
+            self.y_interpolation_range[1]= y_interpolation_input_range[1]
     
     def execute_kriging(self, model):
         
