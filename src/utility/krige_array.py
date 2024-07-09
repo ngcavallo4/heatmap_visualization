@@ -49,6 +49,3 @@ class KrigeArr():
         self.y_arr = np.array(self.y_arr)
         self.stiff_arr = self.ground_truth_func(self.x_arr,self.y_arr)
         self.stiff_arr = np.array(self.stiff_arr)
-
-    def print(self):
-        print([self.x_arr,self.y_arr,self.stiff_arr])

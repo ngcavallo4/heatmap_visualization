@@ -10,6 +10,22 @@ class DataGenerator():
         Currently it generates two traversals. It returns an array
         that contains the x, y, and stiffness data for both 
         traversals. 
+
+        
+        Parameters
+        ----------
+
+        steps_x_max: :class:`float`
+            The maximum x-coordinate value for the generated steps.
+        steps_y_max: :class:`float`
+            The maximum y-coordinate value for the generated steps.
+        x: :class:`np.ndarray`
+            The x-coordinates of the generated steps.
+        y: :class:`np.ndarray`
+            The y-coordinates of the generated steps.
+        stiff: :class:`np.ndarray`
+            The stiffness values of the generated steps.
+
     """
 
     def __init__(self):
