@@ -3,17 +3,17 @@ import matplotlib.pyplot as plt
 
 class GroundTruthPlot():
 
-    def __init__(self, ground_truth_func, x_bounds, y_bounds, num_contours): 
-        self.x_bounds = x_bounds
-        self.y_bounds = y_bounds
+    def __init__(self, ground_truth_func, x_range, y_range, num_contours): 
+        self.x_range = x_range
+        self.y_range = y_range
         self.num_contours = num_contours
         self.ground_truth_func = ground_truth_func
 
         self.plot_ground_truth()
 
     def plot_ground_truth(self):
-        grid_x = np.linspace(0.0001, self.x_bounds,100) # N
-        grid_y = np.linspace(0.001, self.y_bounds,100) # M
+        grid_x = np.linspace(self.x_range[0], self.x_range[1],100) # N
+        grid_y = np.linspace(self.y_range[0], self.y_range[1],100) # M
         grid_x, grid_y = np.meshgrid(grid_x, grid_y)
         grid_stiff = self.ground_truth_func(grid_x,grid_y)
         

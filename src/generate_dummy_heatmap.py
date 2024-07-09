@@ -28,16 +28,16 @@ def main():
     # Number of bins drastically changes the accuracy of the interpolation
 
     # KrigeModel is the class that performs all the interpolation
-    krige_model = KrigeModel(x,y,stiff,6)
+    krige_model = KrigeModel(x,y,stiff,6, 1.0)
 
     # rank_models iterates through several types of kriging and selects the type that best fits the shape of the data
     # that type of model is returned and passed into create model. 
-    model_type = krige_model.rank_models(30,f1, ax = axs[0,0])
-    model, r2 = krige_model.create_model(model_type.name)
+    model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
+    model, r2 = krige_model.fit_model(model_type.name)
 
-    krige_model.organize_kriging_area(True,0,0)
-    krige_model.plot_kriging(model,f1,axs)
-    GroundTruthPlot(ground_truth_func, krige_model.x_interpolation_len, krige_model.y_interpolation_len,150)
+    krige_model.organize_kriging_area(True)
+    
+    GroundTruthPlot(ground_truth_func, krige_model.x_interpolation_range, krige_model.y_interpolation_range,150)
     f1.tight_layout()
     plt.show()
 

@@ -73,7 +73,7 @@ class KrigeModel():
         scores = {}
         
         for model_name, model in models.items():
-            fitted_model, r2 = self.fit_model(model_type=model_name)
+            fitted_model, r2 = self.fit_model(model_name=model_name)
             models[model_name] = fitted_model
     
             scores[model_name] = r2
@@ -173,7 +173,7 @@ class KrigeModel():
             ----------
 
             model: :class:`gs.CovModel`
-                Covariance model calculated from create_model. 
+                Covariance model calculated from fit_model. 
             
             Returns
             -------

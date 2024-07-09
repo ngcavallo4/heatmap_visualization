@@ -220,7 +220,7 @@ class KrigingPlotter():
 
             z_pred_list.append(z_pred)
             var_list.append(var)
-            kriging_results[request] = (z_pred, var, x, y, stiff, title, model,
+            kriging_results[request] = (z_pred, var, x, y, stiff, title, fitted_model,
                                         x_interpolation_range,
                                         y_interpolation_range)
 
