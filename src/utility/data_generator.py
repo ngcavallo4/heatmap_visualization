@@ -35,7 +35,49 @@ class DataGenerator():
         self.y = None
         self.stiff = None
 
-    def generate_steps(self,ground_truth_func, step1_x, step1_y, slope1, nsteps1, step2_x, step2_y, slope2, nsteps2, x_dist, y_dist) -> list[float]:
+    def generate_steps(self,ground_truth_func, step1_x: float, step1_y: float,
+                        slope1: float, nsteps1: int, step2_x: float, 
+                        step2_y: float, slope2: float, nsteps2: int, 
+                        x_dist: float, y_dist: float):
+
+        r"""Generates fake Spirit traversals and returns them in a single
+            NDArray that is vertically stacked. Row 0 is x position, row 1
+            is y position, and row 2 is stiffness. 
+
+            Parameters
+            ----------
+
+            ground_truth_func: :class:`callable` 
+                Stiffness function that generates the stiffness values.
+            step1_x: :class:`float`
+                Starting x position of p0.
+            step1_y: :class:`float`
+                Starting y position of p0 and p1.
+            slope1: :class:`float`
+                Slope of first traversal.
+            nsteps1: :class:`int`
+                Number of steps in first traversal.
+            step2_x: :class:`float`
+                Starting x position of p2.
+            step2_y: :class:`float`
+                Starting y position of p1 and p3.
+            slope2: :class:`float`
+                Slope of first traversal.
+            nsteps2: :class:`int`
+                Number of steps in first traversal.
+            x_dist: :class:`float`
+                Horizontal distance between footsteps.
+            y_dist: :class:`float`
+                Vertical distance between footsteps. 
+
+            Returns
+            -------
+
+            combined_array: :class:`np.ndarray` 
+                Vertically stacked array containing two traversals of Spirit.
+                0th row = x-position, 1st row = y-position, 2nd row = stiffness. 
+            
+        """
 
         p0 = np.array([step1_x,step1_y])  
         arr0 = KrigeArr(p0,slope1,y_dist,nsteps1, ground_truth_func)
@@ -51,7 +93,8 @@ class DataGenerator():
 
         self.x = np.concatenate((arr0.x_arr,arr1.x_arr,arr2.x_arr,arr3.x_arr))
         self.y = np.concatenate((arr0.y_arr,arr1.y_arr,arr2.y_arr,arr3.y_arr))
-        self.stiff = np.concatenate((arr0.stiff_arr,arr1.stiff_arr,arr2.stiff_arr,arr3.stiff_arr))
+        self.stiff = np.concatenate((arr0.stiff_arr,arr1.stiff_arr,
+                                     arr2.stiff_arr,arr3.stiff_arr))
 
         combined_array = np.vstack((self.x,self.y,self.stiff))
 

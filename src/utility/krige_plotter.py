@@ -140,7 +140,7 @@ class KrigingPlotter():
                          extent=(x_interpolation_range[0], x_interpolation_range[1], 
                                  y_interpolation_range[0], y_interpolation_range[1]))
         ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
-        ax1.set_title(f'Kriging Interpolation – {model.name} ' + title)
+        ax1.set_title(f'Kriging Interpolation – {title} ({fitted_model.name})')
         ax1.ticklabel_format(useOffset=False)
         # ax1.set_xlabel('X pos', fontsize = 8)
         # ax1.set_ylabel('Y pos', fontsize = 8)
@@ -153,7 +153,7 @@ class KrigingPlotter():
         im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
                          extent=(x_interpolation_range[0], x_interpolation_range[1],
                                 y_interpolation_range[0], y_interpolation_range[1]))
-        ax2.set_title(f'Kriging Variance – {model.name} ' + title)
+        ax2.set_title(f'Kriging Variance – {title} ({fitted_model.name})')
         ax2.ticklabel_format(useOffset=False)
         # ax2.set_xlabel('X pos', fontsize = 8)
         # ax2.set_ylabel('Y pos', fontsize = 8)
@@ -226,7 +226,7 @@ class KrigingPlotter():
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
-        for request, (z_pred, var, x, y, stiff, title, model, x_interpolation_range, y_interpolation_range) in kriging_results.items():
+        for request, (z_pred, var, x, y, stiff, title, fitted_model, x_interpolation_range, y_interpolation_range) in kriging_results.items():
 
             font = {'size': 7}
             plt.rc('font', **font)
@@ -239,7 +239,7 @@ class KrigingPlotter():
             if match_scale:
                 im1.norm.autoscale([zmin,zmax])
             ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
-            ax1.set_title(f'Kriging Interpolation – {model.name} ' + title)
+            ax1.set_title(f'Kriging Interpolation – {title} ({fitted_model.name})')
             ax1.ticklabel_format(useOffset=False)
             # ax1.set_xlabel('X pos', fontsize = 8)
             # ax1.set_ylabel('Y pos', fontsize = 8)
@@ -254,7 +254,7 @@ class KrigingPlotter():
                                       y_interpolation_range[0], y_interpolation_range[1]))
             if match_scale:
                 im2.norm.autoscale([var_min,var_max])
-            ax2.set_title(f'Kriging Variance – {model.name} ' + title)
+            ax2.set_title(f'Kriging Variance – {title} ({fitted_model.name})')
             ax2.ticklabel_format(useOffset=False)
             # ax2.set_xlabel('X pos', fontsize = 8)
             # ax2.set_ylabel('Y pos', fontsize = 8)

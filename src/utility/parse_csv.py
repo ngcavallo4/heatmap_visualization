@@ -99,7 +99,7 @@ class CSVParser():
                 leg0_x = leg_0[:,0]
                 leg0_y = leg_0[:,1]
                 leg0_stiff = leg_0[:,2]
-                title = "Leg 0"
+                title = "Front Left"
 
                 return leg0_x, leg0_y, leg0_stiff, title
             case '1':
@@ -108,7 +108,7 @@ class CSVParser():
                 leg1_x = leg_1[:, 0]
                 leg1_y = leg_1[:, 1]
                 leg1_stiff = leg_1[:, 2]
-                title = "Leg 1"
+                title = "Back Left"
 
                 return leg1_x, leg1_y, leg1_stiff, title
             case '2':
@@ -117,7 +117,7 @@ class CSVParser():
                 leg2_x = leg_2[:, 0]
                 leg2_y = leg_2[:, 1]
                 leg2_stiff = leg_2[:, 2]
-                title = "Leg 2"
+                title = "Front Right"
 
                 return leg2_x, leg2_y, leg2_stiff, title
             case '3':
@@ -126,14 +126,14 @@ class CSVParser():
                 leg3_x = leg_3[:, 0]
                 leg3_y = leg_3[:, 1]
                 leg3_stiff = leg_3[:, 2]
-                title = "Leg 3"
+                title = "Back Right"
 
                 return leg3_x, leg3_y, leg3_stiff, title
             case 'all':
                 all_legs_x = self.data_arr[:,0]
                 all_legs_y = self.data_arr[:,1]
                 all_legs_stiff = self.data_arr[:,2]
-                title = "4 Legs"
+                title = "All Legs"
 
                 return all_legs_x, all_legs_y, all_legs_stiff, title
 
