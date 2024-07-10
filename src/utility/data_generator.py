@@ -79,6 +79,8 @@ class DataGenerator():
             
         """
 
+        # Creates initial point for KrigeArr object, then initializes KrigeArr
+        # object.
         p0 = np.array([step1_x,step1_y])  
         arr0 = KrigeArr(p0,slope1,y_dist,nsteps1, ground_truth_func)
 
@@ -91,13 +93,17 @@ class DataGenerator():
         p3 = np.array([step2_x + x_dist,step2_y])
         arr3 = KrigeArr(p3,slope2,y_dist,nsteps2, ground_truth_func)
 
+        # Concatenates all arrays.
         self.x = np.concatenate((arr0.x_arr,arr1.x_arr,arr2.x_arr,arr3.x_arr))
         self.y = np.concatenate((arr0.y_arr,arr1.y_arr,arr2.y_arr,arr3.y_arr))
         self.stiff = np.concatenate((arr0.stiff_arr,arr1.stiff_arr,
                                      arr2.stiff_arr,arr3.stiff_arr))
-
+        
+        # Vertically stacks all arrays such that row 0 = x,
+        # row 1 = y, row 2 = z. 
         combined_array = np.vstack((self.x,self.y,self.stiff))
 
+        # Takes maximum of x and y. 
         self.steps_x_max = np.max(self.x)
         self.steps_y_max = np.max(self.y)
 

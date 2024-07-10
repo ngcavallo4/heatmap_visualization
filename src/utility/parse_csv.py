@@ -6,7 +6,7 @@ import numpy as np
 ##
 ##
 ###
-### You must be in the /kriging folder for this to work!
+### You must be in the /heatmap_visualization folder for this to work!
 PATH = "./data"
 
 class CSVParser():
@@ -58,6 +58,8 @@ class CSVParser():
             filereader = csv.reader(csvfile,delimiter=",")
             next(filereader) # Skips title row 
 
+            # Parses each row and separates them by leg index into data_dict,
+            # and into data_arr all togther regardless of leg index. 
             for row in filereader:
                 row_value = int(row[4]) 
                 self.data_dict[row_value].append([float(row[1]), float(row[2]), 

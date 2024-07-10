@@ -73,11 +73,15 @@ class KrigeModel():
         scores = {}
         
         for model_name, model in models.items():
+
+            # Iterates through models dict, fitting models to the estimated
+            # variogram, returns an r^2 value and a fitted_model.
             fitted_model, r2 = self.fit_model(model_name=model_name)
             models[model_name] = fitted_model
     
             scores[model_name] = r2
 
+        # Ranks all the models by r^2 score with 1 being the best 
         ranking = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         print("Ranking by Pseudo-r^2 score")
         for i, (model, score) in enumerate(ranking, 1):
@@ -106,12 +110,14 @@ class KrigeModel():
                 empirical variogram model. 
         """ 
         model_class = getattr(gs,model_name,gs.Gaussian)
-        fitted_model = model_class(dim=2,len_scale = self.length_scale)
+        fitted_model = model_class(dim=2)
 
         bin_center, gamma = gs.vario_estimate((self.x,self.y),self.stiff,
                                                             self.bins)
 
-        para, pcov, r2 = fitted_model.fit_variogram(bin_center,gamma,return_r2=True)
+        para, pcov, r2 = fitted_model.fit_variogram(bin_center,gamma, 
+                            init_guess = {"len_scale": self.length_scale, "default": "current"},
+                            return_r2=True)
         
         # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
         return fitted_model, r2
@@ -164,6 +170,8 @@ class KrigeModel():
             self.x_interpolation_range[1] = x_interpolation_input_range[1]
             self.y_interpolation_range[0]= y_interpolation_input_range[0]
             self.y_interpolation_range[1]= y_interpolation_input_range[1]
+
+        return self.x_interpolation_range, self.y_interpolation_range
     
     def execute_kriging(self, model):
 
@@ -199,6 +207,7 @@ class KrigeModel():
         
         # GSTools
         OK = Ordinary(model=model, cond_pos=[self.x, self.y], cond_val=self.stiff,exact=True)
+        print(model._len_scale)
         z_pred, var = OK.structured([self.x_interpolation_vector,self.y_interpolation_vector])
 
         z_pred = np.array(z_pred)

@@ -19,7 +19,7 @@ class KrigingPlotter():
             Length scale of GSTools variogram.
     """
 
-    def __init__(self, mode, bin_num: int=30, length_scale: float=1.0):
+    def __init__(self, mode, bin_num: int=30, length_scale: dict = {'0': 1.0, '1': 1.0, '2': 1.0, '3': 1.0, 'all': 1.0}):
         self.mode = mode
         self.bin_num = bin_num
         self.length_scale = length_scale
@@ -75,15 +75,18 @@ class KrigingPlotter():
         if self.mode in ['0', '1', '2', '3']:
             x, y, stiff, title = csvparser.access_data(self.mode)
             self.plot_single_mode(x, y, stiff, title, match_steps,
-                                    x_interpolation_input_range=x_interpolation_input_range,
-                                    y_interpolation_input_range=y_interpolation_input_range)
+                                self.length_scale[self.mode],
+                                x_interpolation_input_range=x_interpolation_input_range,
+                                y_interpolation_input_range=y_interpolation_input_range)
         elif self.mode == 'all':
-            self.plot_all_legs(csvparser, match_steps, match_scale,
+            self.plot_all_legs(csvparser, match_steps, 
+                            self.length_scale, match_scale,
                                 x_interpolation_input_range=x_interpolation_input_range, 
                                 y_interpolation_input_range=y_interpolation_input_range)
 
     def plot_single_mode(self, x: np.ndarray, y: np.ndarray, stiff: np.ndarray, title: str, match_steps: bool,
-                        x_interpolation_input_range: list = None, y_interpolation_input_range: list = None):
+                        length_scale: float, x_interpolation_input_range: list = None,
+                        y_interpolation_input_range: list = None):
 
         r"""Plots a single leg based on the passed in parameters x, y, stiff,
             and title. 
@@ -121,7 +124,7 @@ class KrigingPlotter():
                 Passed through from generate_heatmap.
         """
         plt.figure(self.fig)
-        krige_model = KrigeModel(x,y,stiff,self.bin_num, self.length_scale)
+        krige_model = KrigeModel(x,y,stiff,self.bin_num, length_scale)
         model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
         # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
         fitted_model, r2 = krige_model.fit_model(model_type.name)
@@ -165,9 +168,9 @@ class KrigingPlotter():
         plt.show()
 
     
-    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, match_scale: bool = False,
-                        x_interpolation_input_range: list = None, 
-                        y_interpolation_input_range: list = None): 
+    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, length_scale: dict,
+                    match_scale: bool = False, x_interpolation_input_range: list = None, 
+                    y_interpolation_input_range: list = None): 
 
         r"""Plots all four legs individually and four legs together. 
 
@@ -204,19 +207,22 @@ class KrigingPlotter():
         var_list = []
         kriging_results = {}
 
-        zpred_im_list = []
-        var_im_list = []
+        # zpred_im_list = []
+        # var_im_list = []
+
+        global_x_range = []
+        global_y_range = []
         
         for request in request_dict.keys():
             x, y, stiff, title = csvparser.access_data(request)
-            krige_model = KrigeModel(x, y, stiff, self.bin_num, self.length_scale)
+            krige_model = KrigeModel(x, y, stiff, self.bin_num, length_scale[request])
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
             # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
             fitted_model, r2 = krige_model.fit_model(model_type.name)
-            krige_model.organize_kriging_area(match_steps, 
+            x_interpolation_range, y_interpolation_range = krige_model.organize_kriging_area(match_steps, 
                                               x_interpolation_input_range, 
                                               y_interpolation_input_range)
-            z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)
+            z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)                
 
             z_pred_list.append(z_pred)
             var_list.append(var)
@@ -265,12 +271,6 @@ class KrigingPlotter():
 
         plt.tight_layout()
         plt.show()
-
-
-
-
-# fig.colorbar(im, ax=axes.ravel().tolist())
-
 
     def plot_ranked_variogram(self, bin_center, gamma, models_dict, ax, vario_x_max: float=30.0):
         r"""Plots emperical variogram, and different variogram models fitted

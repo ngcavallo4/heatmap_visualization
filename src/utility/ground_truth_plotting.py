@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 
 class GroundTruthPlot():
 
+    r"""
+    """
+
     def __init__(self, ground_truth_func, x_range, y_range, num_contours): 
         self.x_range = x_range
         self.y_range = y_range

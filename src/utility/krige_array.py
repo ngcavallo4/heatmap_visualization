@@ -39,12 +39,16 @@ class KrigeArr():
             based on the function in ground_truth_function.ground_truth_function().
         """
         for i in range(1, self.num_points):
+            # "Steps" along the line set by input parameters.
             y_val = self.p0[1] + i*self.y_dist
             x_val = self.p0[0] + i*(self.y_dist/self.slope)
             
-            self.x_arr.append(x_val)
+            # Appends new values to x and y arrays.
+            self.x_arr.append(x_val)    
             self.y_arr.append(y_val)
     
+        # Makes arrays into np.arrays, applies ground_truth_function to create
+        # stiffness array. 
         self.x_arr = np.array(self.x_arr)
         self.y_arr = np.array(self.y_arr)
         self.stiff_arr = self.ground_truth_func(self.x_arr,self.y_arr)

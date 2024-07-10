@@ -30,17 +30,18 @@ def min_max_dist(x, y, num_bins):
 
     points = np.stack((x,y),axis = -1)
 
-    tree = KDTree(points)  # O(m log m)
+    tree = KDTree(points)
     max_distance = 0
     min_distance = float('inf')
 
     # Iterate over all points to find the farthest and closest pair
     for i, point in enumerate(points):  
         # Query all other points
-        distances, indices = tree.query(point, k=points.shape[0]) 
+        distances, indices = tree.query(point, k=points.shape[0])
+
         farthest_distance = distances[-1]
         closest_distance = distances[1]  
-
+        
         if farthest_distance > max_distance:
             max_distance = farthest_distance
 
