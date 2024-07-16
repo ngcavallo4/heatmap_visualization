@@ -56,7 +56,7 @@ class KrigeModel():
         """
 
         bin_center, gamma, return_counts = gs.vario_estimate((self.x,self.y),
-                            self.stiff,self.bins,return_counts=True) 
+                            self.stiff,self.bins,return_counts=True, latlon = True) 
 
         models = {
             "TPLGaussian": gs.TPLGaussian,
@@ -110,7 +110,9 @@ class KrigeModel():
                 empirical variogram model. 
         """ 
         model_class = getattr(gs,model_name,gs.Gaussian)
-        fitted_model = model_class(dim=2)
+        fitted_model = model_class(dim=2)#, latlon = True, geoscale = gs.KM_SCALE)
+
+        # bins = gs.standard_bins((self.x, self.y), dim=2, latlon = True, geoscale = gs.KM_SCALE)
 
         bin_center, gamma = gs.vario_estimate((self.x,self.y),self.stiff,
                                                             self.bins)

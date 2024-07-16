@@ -19,12 +19,13 @@ class KrigingPlotter():
             Length scale of GSTools variogram.
     """
 
-    def __init__(self, mode, bin_num: int=30, length_scale: dict = {'0': 1.0, '1': 1.0, '2': 1.0, '3': 1.0, 'all': 1.0}):
+    def __init__(self, mode: list[int], bin_num: int=30, length_scale: dict = {'0': 1.0, '1': 1.0, '2': 1.0, '3': 1.0, 'all': 1.0}):
         self.mode = mode
         self.bin_num = bin_num
         self.length_scale = length_scale
         self.fig = None
         self.axs = None
+        self.ncols = None
 
         self.initialize_subplots()
 
@@ -32,14 +33,17 @@ class KrigingPlotter():
         r"""Sets up rows of subplots based on which legs are being plotted.
         """
 
-        if self.mode == '0' or self.mode == '1' or self.mode == '2' or self.mode == '3':
-            nrows = 2
-            ncols = 1
-        elif self.mode == 'all':
-            nrows = 2
-            ncols = 5
+        nrows = 2
+
+        if len(self.mode) > 1:
+            if 'all' not in self.mode:
+                self.ncols = len(self.mode) + 1
+            else:
+                self.ncols = len(self.mode)
+        elif len(self.mode) == 1:
+            self.ncols = 1
         
-        self.fig, self.axs = plt.subplots(nrows,ncols,figsize=(17,7))
+        self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7))
     
     def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False,
         x_interpolation_input_range: list[float] = None,
@@ -72,14 +76,18 @@ class KrigingPlotter():
         
         csvparser = CSVParser(file)
         
-        if self.mode in ['0', '1', '2', '3']:
-            x, y, stiff, title = csvparser.access_data(self.mode)
+        if len(self.mode) == 1:
+            spirit_leg = csvparser.access_data([self.mode])
+            x = spirit_leg[0].x
+            y = spirit_leg[0].y
+            stiff = spirit_leg[0].stiff
+            title = spirit_leg[0].title
             self.plot_single_mode(x, y, stiff, title, match_steps,
                                 self.length_scale[self.mode],
                                 x_interpolation_input_range=x_interpolation_input_range,
                                 y_interpolation_input_range=y_interpolation_input_range)
-        elif self.mode == 'all':
-            self.plot_all_legs(csvparser, match_steps, 
+        else:
+            self.plot_multiple_legs(csvparser, match_steps, 
                             self.length_scale, match_scale,
                                 x_interpolation_input_range=x_interpolation_input_range, 
                                 y_interpolation_input_range=y_interpolation_input_range)
@@ -168,7 +176,7 @@ class KrigingPlotter():
         plt.show()
 
     
-    def plot_all_legs(self, csvparser: CSVParser, match_steps: bool, length_scale: dict,
+    def plot_multiple_legs(self, csvparser: CSVParser, match_steps: bool, length_scale: dict,
                     match_scale: bool = False, x_interpolation_input_range: list = None, 
                     y_interpolation_input_range: list = None): 
 
@@ -201,20 +209,17 @@ class KrigingPlotter():
                 Passed through from generate_heatmap.
         """
 
-        request_dict = {'0':0, '1':1, '2':2, '3':3, 'all':4}
 
         z_pred_list = []
         var_list = []
         kriging_results = {}
 
-        # zpred_im_list = []
-        # var_im_list = []
-
-        global_x_range = []
-        global_y_range = []
-        
-        for request in request_dict.keys():
-            x, y, stiff, title = csvparser.access_data(request)
+        for request in self.mode:
+            spirit_leg = csvparser.access_data([request])
+            x = spirit_leg[0].x
+            y = spirit_leg[0].y
+            stiff = spirit_leg[0].stiff
+            title = spirit_leg[0].title
             krige_model = KrigeModel(x, y, stiff, self.bin_num, length_scale[request])
             model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
             # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
@@ -224,20 +229,28 @@ class KrigingPlotter():
                                               y_interpolation_input_range)
             z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)                
 
+            try:
+                axis_index = int(request)
+            except ValueError:
+                axis_index = self.ncols - 1
+
             z_pred_list.append(z_pred)
             var_list.append(var)
             kriging_results[request] = (z_pred, var, x, y, stiff, title, fitted_model,
                                         x_interpolation_range,
-                                        y_interpolation_range)
+                                        y_interpolation_range,
+                                        axis_index)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
-        for request, (z_pred, var, x, y, stiff, title, fitted_model, x_interpolation_range, y_interpolation_range) in kriging_results.items():
+        for request, (z_pred, var, x, y, stiff, title, fitted_model, x_interpolation_range, y_interpolation_range,
+                        axis_index) in kriging_results.items():
+            
 
             font = {'size': 7}
             plt.rc('font', **font)
 
-            ax1 = self.axs[0, request_dict[request]]
+            ax1 = self.axs[0, axis_index]
             im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
                              extent=(x_interpolation_range[0], x_interpolation_range[1],
                                     y_interpolation_range[0], y_interpolation_range[1]))
@@ -254,7 +267,7 @@ class KrigingPlotter():
             ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             self.fig.colorbar(im1, ax=ax1, shrink=0.7) # format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
 
-            ax2 = self.axs[1, request_dict[request]]
+            ax2 = self.axs[1, axis_index]
             im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
                              extent=(x_interpolation_range[0], x_interpolation_range[1],
                                       y_interpolation_range[0], y_interpolation_range[1]))

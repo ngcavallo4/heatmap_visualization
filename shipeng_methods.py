@@ -1,5 +1,5 @@
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import RBF, WhiteKernel, ConstantKernel as C
+from sklearn.gaussian_process.kernels import RBF, WhiteKernel, Matern, ConstantKernel as C
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
@@ -15,25 +15,30 @@ def get_matrix_value(matrix, x, y):
     # Access and return the value at the specified index
     return matrix[ix, iy]
 
-def Gaussian_Estimation(x, y, prediction_range,  optimizer, noise_level = None, length_scale = None, sigma_f = None):
+def create_kernel(length_scale, noise_level, sigma_f):
+    # Length scale: Controls the smoothness of the function.
+    # length_scale – Small length scale to capture rapid changes
+    # noise_level – Noise level
+    # sigma_f – Signal variance
 
-    # Define the kernel
-    noise_level = noise_level
-    length_scale = length_scale
-    sigma_f = sigma_f * sigma_f
-    # kernel = C(sigma_f) * RBF(length_scale,(0.1, 0.3)) 
+    # Define the kernel components
+    kernel = C(sigma_f**2, (1e-3, 1e3)) * Matern(length_scale, nu=1.5) + WhiteKernel(noise_level, (1e-5, 1))
     
-    kernel = C(sigma_f, (1e-3, 1e7)) * RBF(length_scale, (1e-2, 1e7)) + WhiteKernel(noise_level, (0.0001, 10))
+    return kernel
+
+def Gaussian_Estimation(data, grid, prediction_range,  optimizer, kernel):
 
     # Instantiate the Gaussian Process Regressor
-    if(not optimizer):
-        gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=0, random_state=0, optimizer=None)
+    if (not optimizer):
+        gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=10, random_state=0, optimizer=None)
     else:
-        gp = GaussianProcessRegressor(kernel=kernel)
+
+        kernel = C(10)*RBF(1.0)
+        gp = GaussianProcessRegressor(kernel, n_restarts_optimizer=10)
     # x = np.array([x])
     # x = x.T
     # Fit the model to the data
-    gp.fit(x, y)
+    gp.fit(data, grid)
 
     # Make predictions on new data points
     X_new = prediction_range
@@ -43,6 +48,6 @@ def Gaussian_Estimation(x, y, prediction_range,  optimizer, noise_level = None, 
     #calculate discrepancy
     
     information = np.exp(-np.square(y_std))
-    noise_level_optimized = gp.kernel_.get_params()["k2__noise_level"]
+    # noise_level_optimized = gp.kernel_.get_params()["k2__noise_level"]
    
     return y_pred, y_std, information#, noise_level_optimized

@@ -69,7 +69,7 @@ class CSVParser():
 
         self.data_arr = np.array(self.data_arr)
 
-    def access_data(self, request: str):
+    def access_data(self, request: list[str]):
 
         r"""Enables access to the correct entries of the dictionary of arrays
             for single leg plotting and combined leg plotting. 
@@ -93,53 +93,73 @@ class CSVParser():
 
         """
 
-        request = str(request)
-        match request:
-            case '0':
-                leg_0 = np.array(self.data_dict[0])
+        leg_list = []
 
-                leg0_x = leg_0[:,0]
-                leg0_y = leg_0[:,1]
-                leg0_stiff = leg_0[:,2]
-                title = "Front Left"
+        for s in request:
 
-                return leg0_x, leg0_y, leg0_stiff, title
-            case '1':
-                leg_1 = np.array(self.data_dict[1])
+            match s:
+                case '0':
+                    leg_0 = np.array(self.data_dict[0])
+                    leg0_x = leg_0[:,0]
+                    leg0_y = leg_0[:,1]
+                    leg0_stiff = leg_0[:,2]
 
-                leg1_x = leg_1[:, 0]
-                leg1_y = leg_1[:, 1]
-                leg1_stiff = leg_1[:, 2]
-                title = "Back Left"
+                    leg0 = SpiritLeg(leg0_x, leg0_y, leg0_stiff, "Front Left")
+                    leg_list.append(leg0) 
 
-                return leg1_x, leg1_y, leg1_stiff, title
-            case '2':
-                leg_2 = np.array(self.data_dict[2])
+                case '1':
+                    leg_1 = np.array(self.data_dict[1])
 
-                leg2_x = leg_2[:, 0]
-                leg2_y = leg_2[:, 1]
-                leg2_stiff = leg_2[:, 2]
-                title = "Front Right"
+                    leg1_x = leg_1[:, 0]
+                    leg1_y = leg_1[:, 1]
+                    leg1_stiff = leg_1[:, 2]
+                    title = "Back Left"
 
-                return leg2_x, leg2_y, leg2_stiff, title
-            case '3':
-                leg_3 = np.array(self.data_dict[3])
+                    leg1 = SpiritLeg(leg1_x, leg1_y, leg1_stiff, "Back Left")
+                    leg_list.append(leg1) 
 
-                leg3_x = leg_3[:, 0]
-                leg3_y = leg_3[:, 1]
-                leg3_stiff = leg_3[:, 2]
-                title = "Back Right"
+                case '2':
+                    leg_2 = np.array(self.data_dict[2])
 
-                return leg3_x, leg3_y, leg3_stiff, title
-            case 'all':
-                all_legs_x = self.data_arr[:,0]
-                all_legs_y = self.data_arr[:,1]
-                all_legs_stiff = self.data_arr[:,2]
-                title = "All Legs"
+                    leg2_x = leg_2[:, 0]
+                    leg2_y = leg_2[:, 1]
+                    leg2_stiff = leg_2[:, 2]
+                    title = "Front Right"
 
-                return all_legs_x, all_legs_y, all_legs_stiff, title
+                    leg2 = SpiritLeg(leg2_x, leg2_y, leg2_stiff, "Front Right")
+                    leg_list.append(leg2) 
+
+                case '3':
+                    leg_3 = np.array(self.data_dict[3])
+
+                    leg3_x = leg_3[:, 0]
+                    leg3_y = leg_3[:, 1]
+                    leg3_stiff = leg_3[:, 2]
+                    title = "Back Right"
+
+                    leg3 = SpiritLeg(leg3_x, leg3_y, leg3_stiff, "Back Right")
+                    leg_list.append(leg3) 
+
+                case 'all':
+                    all_legs_x = self.data_arr[:,0]
+                    all_legs_y = self.data_arr[:,1]
+                    all_legs_stiff = self.data_arr[:,2]
+                    title = "All Legs"
+
+                    all_legs = SpiritLeg(all_legs_x, all_legs_y, all_legs_stiff, "All Legs")
+
+                    leg_list.append(all_legs)
+        
+        return leg_list
 
 
+class SpiritLeg():
 
+    def __init__(self, x, y, stiff, title):
+
+        self.x = x
+        self.y = y
+        self.stiff = stiff
+        self.title = title
 
 
