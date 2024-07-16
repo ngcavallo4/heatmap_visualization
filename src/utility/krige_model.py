@@ -23,7 +23,7 @@ class KrigeModel():
             Vector of bin divisions based on function call to vario_bounds.min_max_dist
     """
 
-    def __init__(self,x,y,stiff,num_bins, length_scale):
+    def __init__(self,x,y,stiff,num_bins, length_scale = 1.0):
         self.x = x
         self.y = y
         self.stiff = stiff
@@ -33,10 +33,14 @@ class KrigeModel():
         self.y_interpolation_vector = 0
         self.length_scale = length_scale
 
-        low_bound, up_bound, step_size = vario_bounds.min_max_dist(self.x,self.y,
-                                                                    num_bins)
-        self.bins = np.arange(low_bound, up_bound, step_size)
+        # self.bins = gs.standard_bins((self.x, self.y), latlon=True, bin_no= num_bins, geo_scale=gs.KM_SCALE)
 
+        low_bound, up_bound, step_size = vario_bounds.min_max_dist(self.x,self.y, num_bins)
+        # self.bins = np.arange(low_bound, up_bound, step_size, dtype=np.longdouble)
+
+        step_size = (up_bound) / num_bins
+        self.bins = np.arange(0, up_bound, step_size, dtype=np.longdouble)
+        
     def rank_models(self):
         r"""Ranks variogram models based on how well the model fits the estimated
             emperical variogram model based on r^2 score. 
@@ -124,8 +128,8 @@ class KrigeModel():
         # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
         return fitted_model, r2
 
-    def organize_kriging_area(self, match_steps: bool, x_interpolation_input_range: list = None,
-                                                        y_interpolation_input_range: list = None):
+    def organize_kriging_area(self, match_steps: bool, x_interpolation_input_range,
+                                                        y_interpolation_input_range):
 
         r"""Initializes fields self.x_interpolation_range and 
             self.y_interpolation.range based on whether the area will
@@ -153,16 +157,18 @@ class KrigeModel():
         """
         if match_steps:
             # If values are given, set those equal
-            if x_interpolation_input_range is not None:
+            if x_interpolation_input_range is not None and y_interpolation_input_range is not None:
                 self.x_interpolation_range[0] = x_interpolation_input_range[0]
                 self.y_interpolation_range[0]= y_interpolation_input_range[0]
-            else: # Else set values equal to minimum of steps 
-                self.x_interpolation_range[0] = np.min(self.x) - 0.1
-                self.y_interpolation_range[0] = np.min(self.y) - 0.1
+                self.x_interpolation_range[1] = np.max(self.x)
+                self.y_interpolation_range[1] = np.max(self.y)
+            else:
+                print("Matching steps")
+                self.x_interpolation_range[0] = np.min(self.x) + 0.000001
+                self.y_interpolation_range[0] = np.min(self.y) + 0.000001
+                self.x_interpolation_range[1] = np.max(self.x) + 0.000001
+                self.y_interpolation_range[1] = np.max(self.y) + 0.000001
 
-            # Set upper range equal to maximum of steps
-            self.x_interpolation_range[1] = np.max(self.x) + 0.1
-            self.y_interpolation_range[1] = np.max(self.y) + 0.1
         else: # If not match steps, then must pass in values
 
             if x_interpolation_input_range is None or y_interpolation_input_range is None:

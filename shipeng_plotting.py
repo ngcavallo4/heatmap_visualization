@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shipeng_methods import create_kernel
 from shipeng_methods import Gaussian_Estimation
-from src.utility.parse_csv import CSVParser
+from src.utility.parse_csv2 import CSVParser
 
 def organize_area(x,y, match_steps, x_interpolation_input_range = None, y_interpolation_input_range = None):
 
@@ -52,13 +52,12 @@ xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimatedNum), np.linspace(y_
 vals = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2])
 
 robot_measured_points = np.vstack((x_norm, y_norm)).T
-kernel = create_kernel(0.1,0.1,1.0)
-shear_prediction, shear_std, information_shear = Gaussian_Estimation(robot_measured_points,  stiffness,   vals, True,
-                                                                    kernel=kernel)
+kernel = create_kernel(0.15,0.2, 4)
+shear_prediction, shear_std, information_shear = Gaussian_Estimation(robot_measured_points,  stiffness,   vals, True)
 
-shear_prediction = shear_prediction.reshape(estimatedNum, estimatedNum)
+shear_prediction = shear_prediction.reshape(estimatedNum, estimatedNum).T
 information_shear = information_shear.reshape(estimatedNum, estimatedNum)
-shear_std = shear_std.reshape(estimatedNum, estimatedNum)
+shear_std = shear_std.reshape(estimatedNum, estimatedNum).T
 
 fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
