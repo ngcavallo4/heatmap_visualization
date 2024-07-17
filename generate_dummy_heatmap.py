@@ -4,8 +4,8 @@ sys.path.append(os.path.abspath("./src/utility"))
 import matplotlib.pyplot as plt
 from utility.data_generator import DataGenerator
 from utility.krige_model import KrigeModel
-from ground_truth_plotting import GroundTruthPlot
-from ground_truth_func import ground_truth_func
+from utility.ground_truth_plotting import GroundTruthPlot
+from utility.ground_truth_func import ground_truth_func
 
 def main():
 

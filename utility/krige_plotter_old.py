@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from utility.krige_model import KrigeModel
+from krige_model import KrigeModel
 from matplotlib import ticker
-from utility.parse_csv import CSVParser
+from parse_csv import CSVParser
 import numpy as np 
 
 class KrigingPlotter():

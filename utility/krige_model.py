@@ -1,7 +1,7 @@
 import numpy as np
 import gstools as gs
 from gstools.krige import Ordinary 
-import utility.vario_bounds as vario_bounds
+import vario_bounds as vario_bounds
 
 class KrigeModel():
 

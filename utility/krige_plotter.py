@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from utility.krige_model import KrigeModel
+from krige_model import KrigeModel
 from matplotlib import ticker
-from utility.parse_csv import CSVParser
+from parse_csv import CSVParser
 import numpy as np 
 from numpy import number
 
@@ -95,11 +95,7 @@ class KrigingPlotter():
         kriging_results = {}
 
         for request in self.mode:
-            spirit_leg = csvparser.access_data([request])
-            x = np.array(spirit_leg[0].x)
-            y = np.array(spirit_leg[0].y)
-            stiff = np.array(spirit_leg[0].stiff)
-            title = spirit_leg[0].title
+            x, y, stiff, title = csvparser.access_data([request])
 
             x_arr_list.append(x)
             y_arr_list.append(y)

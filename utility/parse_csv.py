@@ -106,8 +106,7 @@ class CSVParser():
                     leg0_stiff = leg_0[:,2]
                     title = "Front Left"
 
-                    leg0 = SpiritLeg(leg0_x, leg0_y, leg0_stiff, "Front Left")
-                    leg_list.append(leg0) 
+                    return leg0_x, leg0_y, leg0_stiff, title
 
                 case '1':
                     leg_1 = np.array(self.data_dict[1])
@@ -117,8 +116,7 @@ class CSVParser():
                     leg1_stiff = leg_1[:, 2]
                     title = "Back Left"
 
-                    leg1 = SpiritLeg(leg1_x, leg1_y, leg1_stiff, "Back Left")
-                    leg_list.append(leg1) 
+                    return leg1_x, leg1_y, leg1_stiff, title
 
                 case '2':
                     leg_2 = np.array(self.data_dict[2])
@@ -128,8 +126,7 @@ class CSVParser():
                     leg2_stiff = leg_2[:, 2]
                     title = "Front Right"
 
-                    leg2 = SpiritLeg(leg2_x, leg2_y, leg2_stiff, "Front Right")
-                    leg_list.append(leg2) 
+                    return leg2_x, leg2_y, leg2_stiff, title
 
                 case '3':
                     leg_3 = np.array(self.data_dict[3])
@@ -139,8 +136,7 @@ class CSVParser():
                     leg3_stiff = leg_3[:, 2]
                     title = "Back Right"
 
-                    leg3 = SpiritLeg(leg3_x, leg3_y, leg3_stiff, "Back Right")
-                    leg_list.append(leg3) 
+                    return leg3_x, leg3_y, leg3_stiff, title
 
                 case 'all':
                     all_legs_x = self.data_arr[:,0]
@@ -148,20 +144,6 @@ class CSVParser():
                     all_legs_stiff = self.data_arr[:,2]
                     title = "All Legs"
 
-                    all_legs = SpiritLeg(all_legs_x, all_legs_y, all_legs_stiff, "All Legs")
-
-                    leg_list.append(all_legs)
-        
-        return leg_list
-
-
-class SpiritLeg():
-
-    def __init__(self, x, y, stiff, title):
-
-        self.x = x
-        self.y = y
-        self.stiff = stiff
-        self.title = title
+                    return all_legs_x, all_legs_y, all_legs_stiff, title
 
 

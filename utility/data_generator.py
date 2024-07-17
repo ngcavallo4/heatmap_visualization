@@ -1,7 +1,6 @@
 import numpy as np
 import sys
 import os
-sys.path.append(os.path.abspath("./src/utility"))
 from krige_array import KrigeArr 
 
 class DataGenerator():
