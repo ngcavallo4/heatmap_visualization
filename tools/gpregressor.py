@@ -7,19 +7,18 @@ class GPRegressor():
     def __init__(self, length_scale, noise_level, sigma_f):
         self.kernel = self.create_kernel(length_scale,noise_level,sigma_f)
 
-    def create_kernel(self, length_scale, noise_level, sigma_f):
+    def create_kernel(self, length_scale=0.1, noise_level=0.1, sigma_f=1.0):
         # Length scale: Controls the smoothness of the function.
         # length_scale – Small length scale to capture rapid changes
         # noise_level – Noise level
         # sigma_f – Signal variance
 
-        sigma_f = sigma_f * sigma_f
-
         # Define the kernel components
 
         # kernel = C(sigma_f, (1e-3, 1e3)) * Matern(length_scale, nu=1.5) + WhiteKernel(noise_level, (1e-5, 1))
-        kernel = C(sigma_f, (1e-3, 1e3)) * RBF(length_scale, (1e-2, 1e2)) + WhiteKernel(noise_level, (0, 0.2))
-        
+        # kernel = C(sigma_f**2, (1e-3, 1e3)) * RBF(length_scale, (1e-2, 1e2)) + WhiteKernel(noise_level, (0, 0.2))
+        kernel = C(sigma_f**2, (1e-3, 1e3)) * Matern(length_scale=length_scale, nu=1.5) + WhiteKernel(noise_level, (1e-5, 1))
+
         return kernel
 
     def Gaussian_Estimation(self, data, grid, prediction_range,  optimizer, kernel = None):
