@@ -16,6 +16,6 @@ def main():
 
     # To plot multiple legs, pass in all the legs you want to plot into the list 'mode'. 
     plotter = KrigingPlotter(['3','2','0'], bin_num = 30, length_scale=len_scale)
-    plotter.plot_heatmap('combined-2024-06-19x005_Mh24_Loc2.csv', True, match_scale = False, transparent = True)
+    plotter.plot_heatmap('combined-2024-06-19x005_Mh24_Loc2.csv', True, match_scale = False, transparent={'var bound': 12, 'transparency': 0.9})
 
 main()

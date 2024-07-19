@@ -27,10 +27,6 @@ class KrigeModel():
         self.x = x
         self.y = y
         self.stiff = stiff
-        self.x_interpolation_range = [0,0]
-        self.y_interpolation_range = [0,0]
-        self.x_interpolation_vector = 0
-        self.y_interpolation_vector = 0
         self.length_scale = length_scale
 
         self.bins = gs.standard_bins((self.x, self.y), latlon=True, bin_no= num_bins, geo_scale=gs.KM_SCALE)
@@ -127,60 +123,8 @@ class KrigeModel():
         
         # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
         return fitted_model, r2
-
-    def organize_kriging_area(self, match_steps: bool, x_interpolation_input_range,
-                                                        y_interpolation_input_range):
-
-        r"""Initializes fields self.x_interpolation_range and 
-            self.y_interpolation.range based on whether the area will
-            match the input data or not. Must be called before 
-            execute_kriging.
-
-            Parameters
-            ----------
-
-            match_steps: :class:`bool`
-                Boolean that determines whether the kriging area will be fitted
-                to match the input data. If False, user must input 
-                x and y_interpolation_input_range. Passed through from 
-                KrigePlotter.
-            x_interpolation_input_range: :class:`list[float]`, optional
-                Only necessary to provide if match_steps is False. This is a
-                array of length 2, where the 0th index is the lower bound
-                of the range, and the 1st index is the upper bound of the range.
-                Passed through from KrigePlotter.
-            y_interpolation_input_range: :class:`list[float]`, optional
-                Only necessary to provide if match_steps is False. This is a
-                array of length 2, where the 0th index is the lower bound
-                of the range, and the 1st index is the upper bound of the range.
-                Passed through from KrigePlotter.
-        """
-        if match_steps:
-            # If values are given, set those equal
-            if x_interpolation_input_range is not None and y_interpolation_input_range is not None:
-                self.x_interpolation_range[0] = x_interpolation_input_range[0]
-                self.y_interpolation_range[0]= y_interpolation_input_range[0]
-                self.x_interpolation_range[1] = np.max(self.x)
-                self.y_interpolation_range[1] = np.max(self.y)
-            else:
-                self.x_interpolation_range[0] = np.min(self.x) + 0.000001
-                self.y_interpolation_range[0] = np.min(self.y) + 0.000001
-                self.x_interpolation_range[1] = np.max(self.x) + 0.000001
-                self.y_interpolation_range[1] = np.max(self.y) + 0.000001
-
-        else: # If not match steps, then must pass in values
-
-            if x_interpolation_input_range is None or y_interpolation_input_range is None:
-                raise BaseException('Missing arguments. If match_steps is false, the four other arguments in organize_kriging_area are required.')
-
-            self.x_interpolation_range[0] = x_interpolation_input_range[0]
-            self.x_interpolation_range[1] = x_interpolation_input_range[1]
-            self.y_interpolation_range[0]= y_interpolation_input_range[0]
-            self.y_interpolation_range[1]= y_interpolation_input_range[1]
-
-        return self.x_interpolation_range, self.y_interpolation_range
     
-    def execute_kriging(self, model):
+    def execute_kriging(self, model, x_range, y_range):
 
         r"""Interpolates values based on range calculated from organize_kriging_area.
             
@@ -207,15 +151,13 @@ class KrigeModel():
                 plotting
         """
         
-        self.x_interpolation_vector = np.linspace(self.x_interpolation_range[0],
-                                                   self.x_interpolation_range[1], 100) # N
-        self.y_interpolation_vector = np.linspace(self.y_interpolation_range[0],
-                                                   self.y_interpolation_range[1], 100) # M
+        x_vector = np.linspace(x_range[0],x_range[1], 100) # N
+        y_vector = np.linspace(y_range[0],y_range[1], 100) # M
         
         # GSTools
         OK = Ordinary(model=model, cond_pos=[self.x, self.y], cond_val=self.stiff,exact=True)
         print(model._len_scale)
-        z_pred, var = OK.structured([self.x_interpolation_vector,self.y_interpolation_vector])
+        z_pred, var = OK.structured([x_vector,y_vector])
 
         z_pred = np.array(z_pred)
         z_pred = np.transpose(z_pred)
@@ -223,4 +165,4 @@ class KrigeModel():
         var = np.array(var)
         var = np.transpose(var)
 
-        return z_pred, var, self.x_interpolation_range, self.y_interpolation_range 
+        return z_pred, var
