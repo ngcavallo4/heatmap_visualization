@@ -1,7 +1,7 @@
 import numpy as np
 import gstools as gs
 from gstools.krige import Ordinary 
-import vario_bounds as vario_bounds
+import utility.vario_bounds as vario_bounds
 
 class KrigeModel():
 
@@ -33,13 +33,13 @@ class KrigeModel():
         self.y_interpolation_vector = 0
         self.length_scale = length_scale
 
-        # self.bins = gs.standard_bins((self.x, self.y), latlon=True, bin_no= num_bins, geo_scale=gs.KM_SCALE)
+        self.bins = gs.standard_bins((self.x, self.y), latlon=True, bin_no= num_bins, geo_scale=gs.KM_SCALE)
 
-        low_bound, up_bound, step_size = vario_bounds.min_max_dist(self.x,self.y, num_bins)
+        # low_bound, up_bound, step_size = vario_bounds.min_max_dist(self.x,self.y, num_bins)
         # self.bins = np.arange(low_bound, up_bound, step_size, dtype=np.longdouble)
 
-        step_size = (up_bound) / num_bins
-        self.bins = np.arange(0, up_bound, step_size, dtype=np.longdouble)
+        # step_size = (up_bound) / num_bins
+        # self.bins = np.arange(0, up_bound, step_size, dtype=np.longdouble)
         
     def rank_models(self):
         r"""Ranks variogram models based on how well the model fits the estimated
@@ -60,7 +60,7 @@ class KrigeModel():
         """
 
         bin_center, gamma, return_counts = gs.vario_estimate((self.x,self.y),
-                            self.stiff,self.bins,return_counts=True, latlon = True) 
+                            self.stiff,self.bins, return_counts=True, latlon = True) 
 
         models = {
             "TPLGaussian": gs.TPLGaussian,
@@ -114,7 +114,7 @@ class KrigeModel():
                 empirical variogram model. 
         """ 
         model_class = getattr(gs,model_name,gs.Gaussian)
-        fitted_model = model_class(dim=2)#, latlon = True, geoscale = gs.KM_SCALE)
+        fitted_model = model_class(dim=2, latlon = True, geo_scale = gs.KM_SCALE)
 
         # bins = gs.standard_bins((self.x, self.y), dim=2, latlon = True, geoscale = gs.KM_SCALE)
 
@@ -163,7 +163,6 @@ class KrigeModel():
                 self.x_interpolation_range[1] = np.max(self.x)
                 self.y_interpolation_range[1] = np.max(self.y)
             else:
-                print("Matching steps")
                 self.x_interpolation_range[0] = np.min(self.x) + 0.000001
                 self.y_interpolation_range[0] = np.min(self.y) + 0.000001
                 self.x_interpolation_range[1] = np.max(self.x) + 0.000001

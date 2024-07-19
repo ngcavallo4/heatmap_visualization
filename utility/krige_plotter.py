@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from krige_model import KrigeModel
+from utility.krige_model import KrigeModel
 from matplotlib import ticker
-from parse_csv import CSVParser
+from utility.parse_csv import CSVParser
 import numpy as np 
 from numpy import number
 
@@ -37,18 +37,19 @@ class KrigingPlotter():
         nrows = 2
 
         if len(self.mode) > 1:
-            if 'all' not in self.mode:
-                self.ncols = len(self.mode) + 1
+            if 'all' in self.mode:
+                self.ncols = 5
             else:
-                self.ncols = len(self.mode)
+                self.ncols = len(self.mode) + 1 
         elif len(self.mode) == 1:
             self.ncols = 1
         
-        self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7))
+        self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(15,7))
     
     def plot_heatmap(self, file: str, match_steps: bool, match_scale: bool = False,
         x_interpolation_input_range: list = None,
-        y_interpolation_input_range: list = None):
+        y_interpolation_input_range: list = None,
+        transparent: bool = True):
         r"""Plots heatmap. Calls helper function based on which mode user
             decides upon initializing object – single leg or all legs.
 
@@ -78,12 +79,12 @@ class KrigingPlotter():
         csvparser = CSVParser(file)
 
         self.plot_legs(csvparser, match_steps, 
-                            self.length_scale, match_scale,
+                            self.length_scale, match_scale, transparent,
                                 x_interpolation_input_range=x_interpolation_input_range, 
                                 y_interpolation_input_range=y_interpolation_input_range)
 
     def plot_legs(self, csvparser: CSVParser, match_steps: bool, length_scale: dict,
-                    match_scale: bool = False, x_interpolation_input_range: list = None, 
+                    match_scale: bool = False, transparent: bool = True, x_interpolation_input_range: list = None, 
                     y_interpolation_input_range: list = None):
         
         x_arr_list= []
@@ -93,6 +94,7 @@ class KrigingPlotter():
         z_pred_list = []
         var_list = []
         kriging_results = {}
+        axis_index = 0
 
         for request in self.mode:
             x, y, stiff, title = csvparser.access_data([request])
@@ -110,46 +112,72 @@ class KrigingPlotter():
                                                 y_interpolation_input_range)
             z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)                
 
-            try:
-                axis_index = int(request)
-            except ValueError:
-                axis_index = self.ncols - 1
-
             z_pred_list.append(z_pred)
             var_list.append(var)
             kriging_results[request] = (z_pred, var, x, y, stiff, title, fitted_model,
                                         x_interpolation_range,
                                         y_interpolation_range,
                                         axis_index)
+            axis_index += 1
+
+        if len(self.mode) > 1:
+
+            x_arr = np.concatenate(x_arr_list)
+            y_arr = np.concatenate(y_arr_list)
+            stiff_arr = np.concatenate(stiff_arr_list)
+
+            request = ",".join(self.mode)
+
+            krige_model = KrigeModel(x_arr, y_arr, stiff_arr, self.bin_num, length_scale[request])
+            model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
+            # self.plot_ranked_variogram(bin_centers, gamma, models_dict,self.axs[0], 20)
+            fitted_model, r2 = krige_model.fit_model(model_type.name)
+            x_interpolation_range, y_interpolation_range = krige_model.organize_kriging_area(match_steps, 
+                                                x_interpolation_input_range, 
+                                                y_interpolation_input_range)
+            all_z_pred, all_var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model)                
+
+            z_pred_list.append(z_pred)
+            var_list.append(var)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
-        for request, (z_pred, var, x, y, stiff, title, fitted_model, x_interpolation_range, y_interpolation_range,
-                        axis_index) in kriging_results.items():
+        for request, (z_pred, var, x, y, stiff, title, fitted_model, x_interpolation_range, y_interpolation_range, axis_index) in kriging_results.items():
             
-
             font = {'size': 7}
             plt.rc('font', **font)
 
-            ax1 = self.axs[0, axis_index]
+            # Interpolation plotting 
+            try:
+                ax1 = self.axs[0, axis_index]
+            except IndexError:
+                ax1 = self.axs[0]
+
+            z_alpha = np.ones_like(z_pred)
+            if transparent:
+                z_alpha[var > 10] = 0.3
+
             im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
                                 extent=(x_interpolation_range[0], x_interpolation_range[1],
-                                    y_interpolation_range[0], y_interpolation_range[1]))
+                                    y_interpolation_range[0], y_interpolation_range[1]),
+                                alpha = z_alpha)
             ax1.set_xlim([x_interpolation_range[0], x_interpolation_range[1]])
             ax1.set_ylim([y_interpolation_range[0], y_interpolation_range[1]])     
             if match_scale:
                 im1.norm.autoscale([zmin,zmax])
-            ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
+            ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15) 
             ax1.set_title(f'Kriging Interpolation – {title}')
             ax1.ticklabel_format(useOffset=False)
-            # ax1.set_xlabel('X pos', fontsize = 8)
-            # ax1.set_ylabel('Y pos', fontsize = 8)
             ax1.tick_params(axis='both', which='major', labelsize=7)
             ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-            self.fig.colorbar(im1, ax=ax1, shrink=0.7) # format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
+            self.fig.colorbar(im1, ax=ax1, shrink=0.7)
 
-            ax2 = self.axs[1, axis_index]
+            # Variance plotting
+            try:
+                ax2 = self.axs[1, axis_index]
+            except IndexError:
+                ax2 = self.axs[1]
             im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
                                 extent=(x_interpolation_range[0], x_interpolation_range[1],
                                         y_interpolation_range[0], y_interpolation_range[1]))
@@ -159,65 +187,62 @@ class KrigingPlotter():
                 im2.norm.autoscale([var_min,var_max])
             ax2.set_title(f'Kriging Variance – {title}')
             ax2.ticklabel_format(useOffset=False)
-            # ax2.set_xlabel('X pos', fontsize = 8)
-            # ax2.set_ylabel('Y pos', fontsize = 8)
+
             ax2.tick_params(axis='both', which='major', labelsize=7)
             ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             ax2.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-            self.fig.colorbar(im2, ax = ax2, shrink=0.7)# format=ticker.StrMethodFormatter("{x:.7f}"))
+            self.fig.colorbar(im2, ax = ax2, shrink=0.7)
 
-        x_arr = np.concatenate(x_arr_list)
-        y_arr = np.concatenate(y_arr_list)
-        stiff_arr = np.concatenate(stiff_arr_list)
+        if len(self.mode) > 1:
 
-        axis_index = len(self.mode)
+            axis_index = len(self.mode)
 
-        krige_model = KrigeModel(x_arr, y_arr, stiff_arr, self.bin_num, length_scale = length_scale[axis_index])
-        model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
-        fitted_model, r2 = krige_model.fit_model(model_type.name)
-        x_interpolation_range, y_interpolation_range = krige_model.organize_kriging_area(match_steps, 
-                                                x_interpolation_input_range, 
-                                                y_interpolation_input_range)
-        z_pred, var, x_interpolation_range, y_interpolation_range = krige_model.execute_kriging(fitted_model) 
-        font = {'size': 7}
-        plt.rc('font', **font)
+            font = {'size': 7}
+            plt.rc('font', **font)
 
-        ax1 = self.axs[0, axis_index]
-        im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
-                            extent=(x_interpolation_range[0], x_interpolation_range[1],
-                                y_interpolation_range[0], y_interpolation_range[1]))
-        ax1.set_xlim([x_interpolation_range[0], x_interpolation_range[1]])
-        ax1.set_ylim([y_interpolation_range[0], y_interpolation_range[1]])  
-        
-        if match_scale:
-            im1.norm.autoscale([zmin,zmax])
-        ax1.scatter(x_arr, y_arr, c=stiff_arr, edgecolors='k', cmap='viridis') 
-        ax1.set_title(f'Kriging Interpolation – {title}')
-        ax1.ticklabel_format(useOffset=False)
-        # ax1.set_xlabel('X pos', fontsize = 8)
-        # ax1.set_ylabel('Y pos', fontsize = 8)
-        ax1.tick_params(axis='both', which='major', labelsize=7)
-        ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        self.fig.colorbar(im1, ax=ax1, shrink=0.7) # format=ticker.StrMethodFormatter("{x:.7f}"), shrink=0.7)
+            z_alpha = np.ones_like(z_pred)
+            if transparent:
+                z_alpha[all_var > 10] = 0.3
 
-        ax2 = self.axs[1, axis_index]
-        im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
-                            extent=(x_interpolation_range[0], x_interpolation_range[1],
+            try:
+                ax1 = self.axs[0, axis_index]
+            except IndexError:
+                ax1 = self.axs[0]
+
+            im1 = ax1.imshow(all_z_pred, origin='lower', cmap='viridis', 
+                                extent=(x_interpolation_range[0], x_interpolation_range[1],
+                                    y_interpolation_range[0], y_interpolation_range[1]), alpha = z_alpha)
+            ax1.set_xlim([x_interpolation_range[0], x_interpolation_range[1]])
+            ax1.set_ylim([y_interpolation_range[0], y_interpolation_range[1]])     
+            if match_scale:
+                im1.norm.autoscale([zmin,zmax])
+            ax1.scatter(x_arr, y_arr, c=stiff_arr, edgecolors='k', cmap='viridis', s = 15) 
+            ax1.set_title(f'Interpolation – Combined')
+            ax1.ticklabel_format(useOffset=False)
+            ax1.tick_params(axis='both', which='major', labelsize=7)
+            ax1.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+            ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+            self.fig.colorbar(im1, ax=ax1, shrink=0.7) 
+
+            try:
+                ax2 = self.axs[1, axis_index]
+            except IndexError:
+                ax2 = self.axs[1]
+
+            im2 = ax2.imshow(all_var, origin='lower', cmap='viridis', 
+                                extent=(x_interpolation_range[0], x_interpolation_range[1],
                                     y_interpolation_range[0], y_interpolation_range[1]))
-        ax2.set_xlim([x_interpolation_range[0], x_interpolation_range[1]])
-        ax2.set_ylim([y_interpolation_range[0], y_interpolation_range[1]])
-        if match_scale:
-            im2.norm.autoscale([var_min,var_max])
-        ax2.set_title(f'Kriging Variance – {title}')
-        ax2.ticklabel_format(useOffset=False)
-        # ax2.set_xlabel('X pos', fontsize = 8)
-        # ax2.set_ylabel('Y pos', fontsize = 8)
-        ax2.tick_params(axis='both', which='major', labelsize=7)
-        ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        ax2.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        self.fig.colorbar(im2, ax = ax2, shrink=0.7)# format=ticker.StrMethodFormatter("{x:.7f}"))
-        plt.tight_layout()
+            ax2.set_xlim([x_interpolation_range[0], x_interpolation_range[1]])
+            ax2.set_ylim([y_interpolation_range[0], y_interpolation_range[1]])     
+            if match_scale:
+                im2.norm.autoscale([var_min,var_max])
+            ax2.set_title(f'Variance – Combined')
+            ax2.ticklabel_format(useOffset=False)
+            ax2.tick_params(axis='both', which='major', labelsize=7)
+            ax2.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+            ax2.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+            self.fig.colorbar(im2, ax = ax2, shrink=0.7)
+
         plt.show()
 
     def plot_ranked_variogram(self, bin_center, gamma, models_dict, ax, vario_x_max: float=30.0):
@@ -244,7 +269,7 @@ class KrigingPlotter():
         """
 
         plt.figure(self.fig)
-        ax.scatter(bin_center, gamma, color="k", label="data",)
+        ax.scatter(bin_center, gamma, color="k", label="data",s=15)
         ax.set_title("Variogam model comparison – 2 traversals")
         ax.set_xlabel("Lag distance")
         ax.set_ylabel("Semivariogram")

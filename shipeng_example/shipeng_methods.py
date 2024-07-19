@@ -4,6 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
+"""
+NOTE: This code is non functional because of ModuleNotFound errors. To run shipeng_
+plotting you must move this file and shipeng_plotting.py into heatmap_visualization.
+"""
+
 # Configure warnings to always be triggered
 warnings.simplefilter("always")
 

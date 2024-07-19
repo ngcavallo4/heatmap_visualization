@@ -42,7 +42,10 @@ class CSVParser():
 
     def extract_data(self, filepath: os.PathLike):
         r"""Separates data into 2 data structures, a dictionary of arrays for
-            singular leg data, and an array of the combined data. 
+            singular leg data, and an array of the combined data. Converts
+            GPS coordinates from degrees to microdegrees (x 1 million), 
+            because the models really don't like how small the footsteps
+            are in terms of degrees. 
 
             Parameters
             ----------
@@ -60,10 +63,17 @@ class CSVParser():
 
             # Parses each row and separates them by leg index into data_dict,
             # and into data_arr all togther regardless of leg index. 
+
+            # Converting degrees to microdegrees
             for row in filereader:
                 row_value = int(row[5]) 
-                self.data_dict[row_value].append([float(row[1]), float(row[2]), 
-                                                  float(row[3])])
+                # self.data_dict[row_value].append([float(row[1])*1000000,
+                #                                 float(row[2])*1000000, 
+                #                                 float(row[3])])
+                
+                self.data_dict[row_value].append([float(row[1]),
+                                                float(row[2]), 
+                                                float(row[3])])
 
                 self.data_arr.append([float(row[1]), float(row[2]), float(row[3])])  
 
@@ -92,8 +102,6 @@ class CSVParser():
                 Title of request, for plotting purposes.
 
         """
-
-        leg_list = []
 
         for s in request:
 
@@ -137,13 +145,5 @@ class CSVParser():
                     title = "Back Right"
 
                     return leg3_x, leg3_y, leg3_stiff, title
-
-                case 'all':
-                    all_legs_x = self.data_arr[:,0]
-                    all_legs_y = self.data_arr[:,1]
-                    all_legs_stiff = self.data_arr[:,2]
-                    title = "All Legs"
-
-                    return all_legs_x, all_legs_y, all_legs_stiff, title
 
 

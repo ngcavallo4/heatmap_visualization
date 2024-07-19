@@ -84,12 +84,12 @@ class Plotter():
 
         return x_interpolation_range, y_interpolation_range
     
-    def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, optimizer: bool = False, normalize: bool = False):
+    def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, normalize: bool = False):
         csvparser = CSVParser(file)
 
-        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, optimizer, normalize)
-
-    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, optimizer: bool, normalize: bool):
+        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer, normalize)
+        
+    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool, normalize: bool):
         x_arr_list= []
         y_arr_list = []
         stiff_arr_list = []
@@ -101,15 +101,12 @@ class Plotter():
         axis_index = 0
 
         for request in self.mode:
+            # take csv out
             x, y, stiff, title = csvparser.access_data([request])
 
             x_arr_list.append(x)
             y_arr_list.append(y)
             stiff_arr_list.append(stiff)
-
-            all_z_std = None
-            all_information_shear = None
-            all_z_std = None 
 
             # # Normalize area
             if normalize:
@@ -117,16 +114,15 @@ class Plotter():
                 y_min, y_max = np.min(y), np.max(y)
                 x_norm = (x - x_min) / (x_max - x_min)
                 y_norm = (y - y_min) / (y_max - y_min)
-                x_range, y_range = self.organize_area(x_norm, y_norm, True)
+                x_range, y_range = self.organize_area(x_norm, y_norm, match_steps)
                 robot_measured_points = np.vstack((x_norm, y_norm)).T
             else:
-                x_range, y_range = self.organize_area(x, y, True)
+                x_range, y_range = self.organize_area(x, y, match_steps)
                 robot_measured_points = np.vstack((x, y)).T
 
             estimatedNum = 100
             xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimatedNum), np.linspace(y_range[0], y_range[1], num=estimatedNum)
             vals = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2])
-
 
             kernel = gpregressor.kernel
             z_pred, z_std, information_shear = gpregressor.Gaussian_Estimation(robot_measured_points,  stiff,   vals, optimizer, kernel=kernel)
@@ -186,19 +182,26 @@ class Plotter():
             font = {'size': 7}
             plt.rc('font', **font)
 
+            # Interpolation plotting 
             try:
                 ax1 = self.axs[0, axis_index]
             except IndexError:
                 ax1 = self.axs[0]
 
+            z_alpha = np.ones_like(z_pred)
+            if transparent is not None: 
+                bound = transparent['var bound']
+                transparency = transparent['transparency']
+                z_alpha[var > bound] = 1-transparency
+
             im1 = ax1.imshow(z_pred, origin='lower', cmap='viridis', 
                                 extent=(x_range[0], x_range[1],
-                                    y_range[0], y_range[1]))
+                                    y_range[0], y_range[1]), alpha = z_alpha)
             ax1.set_xlim([x_range[0], x_range[1]])
             ax1.set_ylim([y_range[0], y_range[1]])     
             if match_scale:
                 im1.norm.autoscale([zmin,zmax])
-            ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis') 
+            ax1.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s = 15) 
             ax1.set_title(f'Interpolation – {title}')
             ax1.ticklabel_format(useOffset=False)
             ax1.tick_params(axis='both', which='major', labelsize=7)
@@ -206,11 +209,11 @@ class Plotter():
             ax1.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
             self.fig.colorbar(im1, ax=ax1, shrink=0.7) 
 
+            # Variance plotting
             try:
                 ax2 = self.axs[1, axis_index]
             except IndexError:
                 ax2 = self.axs[1]
-
             im2 = ax2.imshow(var, origin='lower', cmap='viridis', 
                                 extent=(x_range[0], x_range[1],
                                     y_range[0], y_range[1]))
@@ -232,6 +235,12 @@ class Plotter():
             font = {'size': 7}
             plt.rc('font', **font)
 
+            all_z_alpha = np.ones_like(all_z_pred)
+            if transparent is not None: 
+                bound = transparent['var bound']
+                transparency = transparent['transparency']
+                all_z_alpha[all_var > bound] = 1-transparency
+
             try:
                 ax1 = self.axs[0, axis_index]
             except IndexError:
@@ -239,7 +248,7 @@ class Plotter():
 
             im1 = ax1.imshow(all_z_pred, origin='lower', cmap='viridis', 
                                 extent=(x_range[0], x_range[1],
-                                    y_range[0], y_range[1]))
+                                    y_range[0], y_range[1]), alpha = all_z_alpha)
             ax1.set_xlim([x_range[0], x_range[1]])
             ax1.set_ylim([y_range[0], y_range[1]])     
             if match_scale:
@@ -248,7 +257,7 @@ class Plotter():
             if normalize:
                 ax1.scatter(x_arr_norm, y_arr_norm, c=stiff_arr, edgecolors='k', cmap='viridis') 
             else:
-                ax1.scatter(x_arr, y_arr, c=stiff_arr, edgecolors='k', cmap='viridis') 
+                ax1.scatter(x_arr, y_arr, c=stiff_arr, edgecolors='k', cmap='viridis', s = 15) 
 
             ax1.set_title(f'Interpolation – Combined')
             ax1.ticklabel_format(useOffset=False)

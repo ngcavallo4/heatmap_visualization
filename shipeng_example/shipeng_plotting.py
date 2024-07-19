@@ -7,6 +7,11 @@ from shipeng_methods import create_kernel
 from shipeng_methods import Gaussian_Estimation
 from utility.parse_csv2 import CSVParser
 
+"""
+NOTE: This code is non functional because of ModuleNotFound errors. To run this
+code, you must move this file and shipeng_methods.py into heatmap_visualization.
+"""
+
 def organize_area(x,y, match_steps, x_interpolation_input_range = None, y_interpolation_input_range = None):
 
     x_interpolation_range = [0,0]
