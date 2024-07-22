@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 
 class GroundTruthPlot():
 
@@ -41,4 +42,8 @@ class GroundTruthPlot():
         ax.set_title('Ground Truth')
         ax.set_xlabel('X Pos')
         ax.set_ylabel('YPos')
-        fig.colorbar(contour, ax= ax)
+        ax.ticklabel_format(useOffset=False)
+        ax.tick_params(axis='both', which='major', labelsize=7)
+        ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        fig.colorbar(contour, ax= ax, shrink=0.7)

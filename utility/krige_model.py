@@ -64,10 +64,11 @@ class KrigeModel():
             "Spherical":gs.Spherical,
             "Linear":gs.Linear,
             "Cubic":gs.Cubic,
-            "TPLStable":gs.TPLStable,
-            # "TPLSimple":gs.TPLSimple,
+            # "TPLStable":gs.TPLStable,
+            "TPLSimple":gs.TPLSimple,
             "TPLExponential":gs.TPLExponential,
-            "Gaussian":gs.Gaussian
+            "Gaussian":gs.Gaussian,
+            "Matern": gs.Matern 
         }
 
         scores = {}
@@ -83,11 +84,13 @@ class KrigeModel():
 
         # Ranks all the models by r^2 score with 1 being the best 
         ranking = sorted(scores.items(), key=lambda item: item[1], reverse=True)
-        print("Ranking by Pseudo-r^2 score")
+        # print("Ranking by Pseudo-r^2 score")
         for i, (model, score) in enumerate(ranking, 1):
-            print(f"{i:>6}. {model:>15}: {score:.5}")
+            # print(f"{i:>6}. {model:>15}: {score:.5}")
             if i == 1: 
                 top_model = models.get(model)
+
+        print(f"Top model: {top_model} = {scores[top_model.name]}\n")
 
         return top_model, models, bin_center, gamma       
 
@@ -110,16 +113,15 @@ class KrigeModel():
                 empirical variogram model. 
         """ 
         model_class = getattr(gs,model_name,gs.Gaussian)
-        fitted_model = model_class(dim=2, latlon = True, geo_scale = gs.KM_SCALE)
+        fitted_model = model_class(latlon = True, geo_scale = gs.KM_SCALE)
 
         # bins = gs.standard_bins((self.x, self.y), dim=2, latlon = True, geoscale = gs.KM_SCALE)
 
         bin_center, gamma = gs.vario_estimate((self.x,self.y),self.stiff,
                                                             self.bins)
 
-        para, pcov, r2 = fitted_model.fit_variogram(bin_center,gamma, 
-                            init_guess = {"len_scale": self.length_scale, "default": "current"},
-                            return_r2=True)
+        para, pcov, r2 = fitted_model.fit_variogram(bin_center,gamma,return_r2=True,
+                                                    init_guess={"len_scale": self.length_scale,"default": "current"})
         
         # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
         return fitted_model, r2
@@ -156,7 +158,7 @@ class KrigeModel():
         
         # GSTools
         OK = Ordinary(model=model, cond_pos=[self.x, self.y], cond_val=self.stiff,exact=True)
-        print(model._len_scale)
+        print(f"Length scale: {model._len_scale}\n")
         z_pred, var = OK.structured([x_vector,y_vector])
 
         z_pred = np.array(z_pred)

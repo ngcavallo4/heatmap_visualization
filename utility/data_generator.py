@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 import os
-from krige_array import KrigeArr 
+from utility.krige_array import KrigeArr 
 
 class DataGenerator():
 
