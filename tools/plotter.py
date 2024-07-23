@@ -71,7 +71,7 @@ class Plotter():
         for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index) in results.items():
             self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent)
 
-        plt.tight_layout()
+
         plt.show()
 
     def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request):
@@ -91,10 +91,11 @@ class Plotter():
         return z_pred, var
     
     def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name):
-        if field_name == "Interpolation":
-            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
-        else:
-            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+
+        # if field_name == "Interpolation":
+        im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        # else:
+        #     im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
         if match_scale:
@@ -109,21 +110,29 @@ class Plotter():
         cbar = self.fig.colorbar(im, ax=ax, shrink=0.7)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
+        # Set x-axis label
+        offset_text = ax.xaxis.get_offset_text()
+        offset_text.set_size(7)
+        offset_text = ax.yaxis.get_offset_text()
+        offset_text.set_size(7)
+        ax.set_xlabel('Latitude(º)',fontsize=10)
+        ax.xaxis.set_label_coords(0.5, -0.16)
+        ax.set_ylabel("Longitude(º)",loc='center',fontsize=10)
+
+
     def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent: dict=None):
-        font = {'size': 7}
-        plt.rc('font', **font)
 
         z_alpha = np.ones_like(z_pred)
         if transparent is not None:
             var_percent = transparent['var %']
             transparency = transparent['transparency']
-            z_alpha[var > var_percent*var_max] = 1 - transparency
+            transparency_var = var_percent*var_max 
+            z_alpha[var > transparency_var] = 1 - transparency
 
         fields = [('Interpolation', z_pred, zmin, zmax), ('Variance', var, var_min, var_max)]
         for i, (field_name, field, fmin, fmax) in enumerate(fields):
             ax_field = self.axs[i, axis_index] if len(self.mode) > 1 else self.axs[i]
             self.plot_field(ax_field, field, x_range, y_range, z_alpha, match_scale, fmin, fmax, title, x, y, stiff, field_name)
-
         
     def initialize_subplots(self):
             r"""Sets up rows of subplots based on which legs are being plotted.
@@ -139,7 +148,7 @@ class Plotter():
             elif len(self.mode) == 1:
                 self.ncols = 1
 
-            self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7))
+            self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7), layout='tight')
     
     def organize_area(self, x, y, match_steps: bool, x_input_range = None,
                                                         y_input_range = None):

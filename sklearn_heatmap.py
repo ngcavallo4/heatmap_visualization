@@ -8,17 +8,17 @@ import time
 def main():
 
     # To plot multiple legs, pass in all the legs you want to plot into the list leg_list. 
-    len_scale = {'0': 0.0002, '1':  0.000001, '2':  0.0002, '3':  0.00001, '0,2':  0.0002}
+    len_scale = {'0':0.0002,'2':0.0002,'0,2':0.0002}
     plotter = Plotter(['0','2'])
     tool = GPRegressor(len_scale,0.2,4)
-    plotter.plot_heatmap('combined-2024-06-19x005_Mh24_Loc2.csv',True, gpregressor=tool,
-                    transparent=None, match_scale=False, normalize=False)
-    # {'var %': 0.15, 'transparency': 0.6}
+    plotter.plot_heatmap('data/combined-2024-06-19x005_Mh24_Loc2.csv',True, gpregressor=tool,
+                    transparent = {'var %': 0.55, 'transparency': 0.35}, match_scale=True, normalize=False)
+    # {'var %': 0.55, 'transparency': 0.35}
 start_time = time.time()  
 main()
 end_time = time.time()
 print(f"Elapsed time {end_time - start_time} seconds to calculate & plot")
 
-
-#0.00001
- 
+0.000005
+0.00001
+0.0002

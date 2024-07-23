@@ -17,7 +17,7 @@ class CSVParser():
 
         Parameters
         ----------
-        filename: :class:`str`
+        filepath: :class:`str`
             Name of the csv file where the data is stored. This file should be
             stored in /kriging/data. This will only work if you are in /kriging
             when running your code.
@@ -31,12 +31,12 @@ class CSVParser():
             column 2.
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, filepath: str):
 
         self.data_dict = {}
         self.data_arr = []
         
-        filepath = os.path.join(PATH, filename) 
+        # filepath = os.path.join(PATH, filename) 
 
         self.extract_data(filepath)
 
