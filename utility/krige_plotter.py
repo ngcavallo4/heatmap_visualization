@@ -11,13 +11,15 @@ class KrigingPlotter():
 
         Parameters
         ----------
-
+        leg_list: :class:`list[str]`
+            List of legs to be plotted & interpolated. 
         match_steps: :class:`bool`
             A boolean passed on from organize_kriging_area.
         bin_num: :class:`int`
             Number of bins for the estimated emperical variogram.
-        length_scale: Optional, :class:`float`
-            Length scale of GSTools variogram.
+        length_scale: Optional, :class:`dict`
+            Length scale of GSTools variogram. Each length scale corresponds
+            to a specific leg or combination of legs. 
     """
 
     def __init__(self, leg_list: list[int] = None, bin_num: int=30, length_scale: dict = {'0': 1.0, '1': 1.0, '2': 1.0, '3': 1.0}):
@@ -33,7 +35,22 @@ class KrigingPlotter():
         r"""Sets up rows of subplots based on which legs are being plotted. 
             Must be called externally before plot_heatmap. No need to store
             the figure and axs that are returned unless plotting additional 
-            plots. 
+            plots. If just using this class for the plot_fields function,
+            pass in 'null' to the leg_list argument when initializing an instance
+            of the class. Then, pass in the optional arguments num_rows and
+            num_cols. 
+
+            Parameters
+            ----------
+            num_rows: :class:`int`, optional
+                Only used if user desires to use the plot_fields function
+                separately from interpolation features (plotting multiple legs
+                using data from a CSV). Number of rows in the subplot.
+            num_cols: :class:`int`, optional
+                Only used if user desires to use the plot_fields function
+                separately from interpolation features (plotting multiple legs
+                using data from a CSV). Number of rows in the subplot.
+
         """
 
         nrows = 2
@@ -196,15 +213,15 @@ class KrigingPlotter():
         plt.rc('font', **font)
 
         # Creates array of transparency values based on variance dictionary
-        # where 'var bound' corresponds to the max variance that interpolation
-        # values can have before they become transparent, and 'transparency'
+        # where 'var %' corresponds to the percentage (0-1) of max variance that
+        # interpolation values can have before they become transparent, and 'transparency'
         # corresponds to the transparency value from 0-1 where 1 is 100% transparent
         # and 0 is 0% transparent. 
         z_alpha = np.ones_like(z_pred)
         if transparent is not None:
-            bound = transparent['var bound']
+            var_percent = transparent['var %']
             transparency = transparent['transparency']
-            z_alpha[var > bound] = 1 - transparency
+            z_alpha[var > var_percent*var_max] = 1 - transparency
 
         # Plots interpolation and variance using plot_field function
         fields = [('Interpolation', z_pred, zmin, zmax), ('Variance', var, var_min, var_max)]
@@ -219,7 +236,10 @@ class KrigingPlotter():
                 colormin: float=None, colormax: float=None):
         
         # Plotting field using imshow
-        im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        if field_name == "Interpolation":
+            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        else:
+            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
 

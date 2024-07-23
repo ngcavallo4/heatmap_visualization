@@ -113,7 +113,7 @@ class KrigeModel():
                 empirical variogram model. 
         """ 
         model_class = getattr(gs,model_name,gs.Gaussian)
-        fitted_model = model_class(latlon = True, geo_scale = gs.KM_SCALE)
+        fitted_model = model_class(latlon = True, geo_scale = gs.KM_SCALE, len_scale = self.length_scale)
 
         # bins = gs.standard_bins((self.x, self.y), dim=2, latlon = True, geoscale = gs.KM_SCALE)
 
@@ -123,7 +123,7 @@ class KrigeModel():
         para, pcov, r2 = fitted_model.fit_variogram(bin_center,gamma,return_r2=True,
                                                     init_guess={"len_scale": self.length_scale,"default": "current"})
         
-        # print(f"Fitted variogram parameters: sill={fit_model.sill}, range={fit_model.len_scale}, nugget={fit_model.nugget}")
+        # print(f"Fitted variogram parameters: sill={fitted_model.sill}, len_scale={fitted_model.len_scale}, nugget={fitted_model.nugget}")
         return fitted_model, r2
     
     def execute_kriging(self, model, x_range, y_range):

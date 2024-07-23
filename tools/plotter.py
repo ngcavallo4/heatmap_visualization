@@ -49,23 +49,22 @@ class Plotter():
             axis_index += 1
 
         if len(self.mode) > 1:
-            x_arr = np.concatenate(x_arr_list)
-            y_arr = np.concatenate(y_arr_list)
-            stiff_arr = np.concatenate(stiff_arr_list)
+            x_combined = np.concatenate(x_arr_list)
+            y_combined = np.concatenate(y_arr_list)
+            stiff_combined = np.concatenate(stiff_arr_list)
 
-            request = ",".join(self.mode)
+            combined_request = ",".join(self.mode)
 
             if normalize:
-                x_arr, y_arr = self.normalize_data(x_arr, y_arr)
-            
-            x_range, y_range = self.organize_area(x_arr, y_arr, True)
-            z_pred, var = self.perform_kriging(gpregressor, x_arr, y_arr, stiff_arr, x_range, y_range, optimizer, request)
+                x_combined, y_combined = self.normalize_data(x_combined, y_combined)
 
-            z_pred_list.append(z_pred)
-            var_list.append(var)
+            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, True)
+            z_pred_combined, var_combined = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
 
-            axis_index = len(self.mode)
-            results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index)
+            z_pred_list.append(z_pred_combined)
+            var_list.append(var_combined)
+
+            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, axis_index)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
@@ -92,7 +91,10 @@ class Plotter():
         return z_pred, var
     
     def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name):
-        im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        if field_name == "Interpolation":
+            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        else:
+            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
         if match_scale:
@@ -107,12 +109,12 @@ class Plotter():
         cbar = self.fig.colorbar(im, ax=ax, shrink=0.7)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
-    def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent=None):
+    def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent: dict=None):
         font = {'size': 7}
         plt.rc('font', **font)
 
         z_alpha = np.ones_like(z_pred)
-        if transparent:
+        if transparent is not None:
             var_percent = transparent['var %']
             transparency = transparent['transparency']
             z_alpha[var > var_percent*var_max] = 1 - transparency
@@ -188,11 +190,11 @@ class Plotter():
                 y_range[1] = np.max(y)
                 y_range[0]= y_input_range[0]
             else:
-                x_range[0] = np.min(x) + 0.000001
-                x_range[1] = np.max(x) + 0.000001
+                x_range[0] = np.min(x) - 0.000002
+                x_range[1] = np.max(x) + 0.000002
 
-                y_range[1] = np.max(y) + 0.000001
-                y_range[0] = np.min(y) + 0.000001
+                y_range[1] = np.max(y) + 0.000002
+                y_range[0] = np.min(y) - 0.000002
 
         else: # If not match steps, then must pass in values
 
