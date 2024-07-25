@@ -1,6 +1,8 @@
 import csv
 import os
 import numpy as np
+import utility.convert_gps as gpsconvert
+import pandas 
 
 #
 ##
@@ -35,12 +37,13 @@ class CSVParser():
 
         self.data_dict = {}
         self.data_arr = []
+        self.filepath = filepath
         
         # filepath = os.path.join(PATH, filename) 
 
-        self.extract_data(filepath)
+        self.extract_data()
 
-    def extract_data(self, filepath: os.PathLike):
+    def extract_data(self):
         r"""Separates data into 2 data structures, a dictionary of arrays for
             singular leg data, and an array of the combined data. Converts
             GPS coordinates from degrees to microdegrees (x 1 million), 
@@ -57,7 +60,7 @@ class CSVParser():
         self.data_dict = {0: [], 1: [], 2: [], 3: []}
         self.data_arr = []
 
-        with open(filepath, 'r') as csvfile:
+        with open(self.filepath, 'r') as csvfile:
             filereader = csv.reader(csvfile,delimiter=",")
             next(filereader) # Skips title row 
 
@@ -71,13 +74,17 @@ class CSVParser():
                 #                                 float(row[2])*1000000, 
                 #                                 float(row[3])])
                 
-                self.data_dict[row_value].append([float(row[1]),
-                                                float(row[2]), 
-                                                float(row[3])])
-
-                self.data_arr.append([float(row[1]), float(row[2]), float(row[3])])  
+                self.data_dict[row_value].append([float(row[2]),float(row[1]),float(row[3])])
 
         self.data_arr = np.array(self.data_arr)
+
+    def convert_gps_to_meters(self):
+
+        with open(self.filepath, 'a') as csvfile:
+            filewriter = csv.writer(csvfile)
+            filereader = csv.reader(csvfile)
+            next(filereader)
+
 
     def access_data(self, request: list[str]):
 
@@ -114,6 +121,9 @@ class CSVParser():
                     leg0_stiff = leg_0[:,2]
                     title = "Front Left"
 
+                    # leg0_x_meters, leg0_y_meters = gpsconvert.gps_to_meters(leg0_y, leg0_x)
+                    # return leg0_x_meters, leg0_y_meters, leg0_stiff, title
+                    
                     return leg0_x, leg0_y, leg0_stiff, title
 
                 case '1':
@@ -124,8 +134,11 @@ class CSVParser():
                     leg1_stiff = leg_1[:, 2]
                     title = "Back Left"
 
-                    return leg1_x, leg1_y, leg1_stiff, title
+                    # # leg1_x_meters, leg1_y_meters = gpsconvert.gps_to_meters(leg1_y, leg1_x)
+                    # return leg1_x_meters, leg1_y_meters, leg1_stiff, title
 
+                    return leg1_x, leg1_y, leg1_stiff, title
+                
                 case '2':
                     leg_2 = np.array(self.data_dict[2])
 
@@ -134,6 +147,9 @@ class CSVParser():
                     leg2_stiff = leg_2[:, 2]
                     title = "Front Right"
 
+                    # leg2_x_meters, leg2_y_meters = gpsconvert.gps_to_meters(leg2_y, leg2_x)
+                    # return leg2_x_meters, leg2_y_meters, leg2_stiff, title
+                
                     return leg2_x, leg2_y, leg2_stiff, title
 
                 case '3':
@@ -144,6 +160,9 @@ class CSVParser():
                     leg3_stiff = leg_3[:, 2]
                     title = "Back Right"
 
+                    # leg3_x_meters, leg3_y_meters = gpsconvert.gps_to_meters(leg3_y, leg3_x)
+                    # return leg3_x_meters, leg3_y_meters, leg3_stiff, title
+                
                     return leg3_x, leg3_y, leg3_stiff, title
 
 

@@ -266,6 +266,8 @@ class KrigingPlotter():
         fitted_model, r2 = krige_model.fit_model(model_type.name)
         z_pred, var = krige_model.execute_kriging(fitted_model, x_range, y_range) 
 
+        z_pred[z_pred < 0] = 0
+
         return z_pred, var, fitted_model
     
     def get_global_color_limits(self, z_pred_list: list[np.ndarray], var_list: list[np.ndarray]):
