@@ -28,5 +28,3 @@ start_time = time.time()
 main()
 end_time = time.time()
 print(f"Elapsed time {end_time - start_time} seconds to calculate & plot")
-
-# OMFG

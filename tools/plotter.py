@@ -12,15 +12,17 @@ class Plotter():
         self.fig = None
         self.axs = None
         self.ncols = None
+        self.latlon = None 
 
         self.initialize_subplots()
 
     def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
         csvparser = CSVParser(file)
+    
+        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
+        self.latlon = latlon
 
-        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer, latlon)
-
-    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool, latlon: bool):
+    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool):
         x_arr_list = []
         y_arr_list = []
         stiff_arr_list = []
@@ -33,7 +35,7 @@ class Plotter():
         for request in self.mode:
             x, y, stiff, title = csvparser.access_data([request])
 
-            if not latlon:
+            if not self.latlon:
                 x, y = gps_coords_to_meters(x,y)
                 # x, y = convert_gps_to_meters(x,y) # Alternate method 
 
@@ -41,7 +43,7 @@ class Plotter():
             y_arr_list.append(y)
             stiff_arr_list.append(stiff)
 
-            x_range, y_range = self.organize_area(x, y, match_steps, latlon = latlon)
+            x_range, y_range = self.organize_area(x, y, match_steps)
             z_pred, var = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request)
 
             z_pred_list.append(z_pred)
@@ -57,7 +59,7 @@ class Plotter():
 
             combined_request = ",".join(self.mode)
 
-            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps, latlon=latlon)
+            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
             z_pred_combined, var_combined = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
 
             z_pred_list.append(z_pred_combined)
@@ -128,17 +130,21 @@ class Plotter():
         ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         cbar = self.fig.colorbar(im, ax=ax, shrink=0.7)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        cbar.set_label(f'{field_unit}', rotation=270, labelpad = 10)
+        cbar.set_label(f'{field_unit}', rotation=270, labelpad = 14)
 
         # Set x-axis label
         offset_text = ax.xaxis.get_offset_text()
         offset_text.set_size(7)
         offset_text = ax.yaxis.get_offset_text()
         offset_text.set_size(7)
-        ax.set_xlabel("Longitude(º)",fontsize=10)
-        ax.xaxis.set_label_coords(0.5, -0.19)
-        ax.set_ylabel("Latitude(º)",loc='center',fontsize=10)
-        
+        if self.latlon:
+            ax.set_xlabel("Longitude(º)",fontsize=10)
+            ax.xaxis.set_label_coords(0.5, -0.19)
+            ax.set_ylabel("Latitude(º)",loc='center',fontsize=10)
+        else: 
+            ax.set_xlabel("X Position (m)",fontsize=10)
+            ax.set_ylabel("Y Position (m)",loc='center',fontsize=10)
+            
     def initialize_subplots(self):
             r"""Sets up rows of subplots based on which legs are being plotted.
             """
@@ -156,7 +162,7 @@ class Plotter():
             self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7), layout='tight')
     
     def organize_area(self, x, y, match_steps: bool, x_input_range = None,
-                                                        y_input_range = None, latlon: bool = False):
+                                                        y_input_range = None):
 
         r"""Returns ranges x_range and y_range based on whether the area
             will match the input data or not.
@@ -191,7 +197,7 @@ class Plotter():
                 Range of y values to interpolate over.
 
         """
-        if latlon:
+        if self.latlon:
             offset = 0.000001
         else: 
             offset = 0.25
