@@ -3,7 +3,7 @@ import numpy as np
 from utility.parse_csv import CSVParser
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from utility.convert_gps import gps_to_meters
+from tools.convert_gps import gps_to_meters
 
 class Plotter():
      
@@ -32,6 +32,8 @@ class Plotter():
 
         for request in self.mode:
             x, y, stiff, title = csvparser.access_data([request])
+
+            x, y = gps_to_meters(x,y)
 
             x_arr_list.append(x)
             y_arr_list.append(y)

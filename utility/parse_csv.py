@@ -9,7 +9,7 @@ import pandas
 ##
 ###
 ### Replace this path folder with wherever you keep your csvs
-PATH = "./Users/natalie/Desktop/heatmap_csvs/"
+PATH = "/Users/natalie/Desktop/heatmap_csvs/"
 
 class CSVParser():
 
@@ -72,6 +72,7 @@ class CSVParser():
                 #                                 float(row[2])*1000000, 
                 #                                 float(row[3])])
                 
+                # row 1 = lat, row 2 = lon, row 3 = stiff
                 self.data_dict[row_value].append([float(row[2]),float(row[1]),float(row[3])])
 
         self.data_arr = np.array(self.data_arr)

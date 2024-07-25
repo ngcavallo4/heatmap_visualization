@@ -20,7 +20,7 @@ def main():
     len_scale_bounds = {'0': (long_scale/10, long_scale*10), '2': (long_scale/10, long_scale*10),'0,2': (long_scale/10, long_scale*10)}
     plotter = Plotter(['0','2'])
     tool = GPRegressor(len_scale,0.2,2, 2.5, len_scale_bounds)
-    plotter.plot_heatmap('data/combined-2024-06-19x005_Mh24_Loc2.csv',True, gpregressor=tool,
+    plotter.plot_heatmap('2024-6-18_Mh24_Loc1_Path1_10_12_am_Trial3.csv',True, gpregressor=tool,
                     transparent = None, match_scale=True, normalize=False, optimizer = False)
     {'var %': 0.55, 'transparency': 0.4}
 
