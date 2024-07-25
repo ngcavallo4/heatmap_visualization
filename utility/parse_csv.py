@@ -35,6 +35,13 @@ class CSVParser():
     """
 
     def __init__(self, filename: str):
+        """Initialize the CSV class with the given file.
+        
+        Parameters
+        ----------
+        filename: :class:`str`
+            Filename to parse.
+        """
 
         self.data_dict = {}
         self.data_arr = []
@@ -101,11 +108,11 @@ class CSVParser():
             
             Returns
             -------
-            x: :class:`numpy.ndarray`
+            x: :class:`np.ndarray`
                 X position array.
-            y: :class:`numpy.ndarray`
+            y: :class:`np.ndarray`
                 Y position array.
-            stiffness: :class:`numpy.ndarray`
+            stiffness: :class:`np.ndarray`
                 Stiffness value array.
             title: :class:`str`
                 Title of request, for plotting purposes.

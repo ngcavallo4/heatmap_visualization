@@ -6,9 +6,32 @@ from matplotlib import ticker
 from utility.convert_gps import gps_coords_to_meters, convert_gps_to_meters
 
 class Plotter():
+    """
+        A class to plot heatmaps and interpolation results using Gaussian Process Regression.
+
+        Attributes
+        ----------
+        mode: :class:`list[str]`
+            List of legs to plot.
+        fig: :class:`matplotlib.figure.Figure`
+            The figure object for the plots.
+        axs: :class:`np.ndarray`
+            Array of axes objects for subplots.
+        ncols: :class:`int`
+            Number of columns for the subplots.
+        latlon: :class:`bool`
+            Boolean indicating whether coordinates are in latitude and longitude.
+        """
      
-    def __init__(self, mode: list[str]):
-        self.mode = mode
+    def __init__(self, leg_list: list[str]):
+        """Initialize the Plotter class with the given leg list.
+        
+        Parameters
+        ----------
+        mode: :class:`list[str]`
+            List of legs to plot.
+        """
+        self.leg_list = leg_list
         self.fig = None
         self.axs = None
         self.ncols = None
@@ -17,12 +40,51 @@ class Plotter():
         self.initialize_subplots()
 
     def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
+        """Plot heatmap for the given CSV file using Gaussian Process Regression.
+        
+        Parameters
+        ----------
+        file: :class:`str`
+            Path to the CSV file.
+        match_steps: :class:`bool`
+            Boolean indicating whether to match steps.
+        gpregressor: :class:`GPRegressor`
+            Gaussian Process Regressor object.
+        match_scale: :class:`bool`, optional
+            Boolean indicating whether to match the scale of plots, by default False.
+        transparent: :class:`dict`, optional
+            Dictionary containing transparency settings, by default None.
+        optimizer: :class:`bool`, optional
+            Boolean indicating whether to use an optimizer, by default False.
+        latlon: :class:`bool`, optional
+            Boolean indicating whether coordinates are in latitude and longitude, by default False.
+        """
+
         csvparser = CSVParser(file)
     
         self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
         self.latlon = latlon
 
     def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool):
+
+        """Plot legs based on the parsed CSV data and Gaussian Process Regression.
+        
+        Parameters
+        ----------
+        csvparser: :class:`CSVParser`
+            CSV parser object to access data.
+        match_steps: :class:`bool`
+            Boolean indicating whether to match steps.
+        gpregressor: :class:`GPRegressor`
+            Gaussian Process Regressor object.
+        match_scale: :class:`bool`
+            Boolean indicating whether to match the scale of plots.
+        transparent: :class:`dict`
+            Dictionary containing transparency settings.
+        optimizer: :class:`bool`
+            Boolean indicating whether to use an optimizer.
+        """
+
         x_arr_list = []
         y_arr_list = []
         stiff_arr_list = []
@@ -32,7 +94,7 @@ class Plotter():
         results = {}
         axis_index = 0
 
-        for request in self.mode:
+        for request in self.leg_list:
             x, y, stiff, title = csvparser.access_data([request])
 
             if not self.latlon:
@@ -52,12 +114,12 @@ class Plotter():
             results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index)
             axis_index += 1
 
-        if len(self.mode) > 1:
+        if len(self.leg_list) > 1:
             x_combined = np.concatenate(x_arr_list)
             y_combined = np.concatenate(y_arr_list)
             stiff_combined = np.concatenate(stiff_arr_list)
 
-            combined_request = ",".join(self.mode)
+            combined_request = ",".join(self.leg_list)
 
             x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
             z_pred_combined, var_combined = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
@@ -77,7 +139,37 @@ class Plotter():
         plt.tight_layout()
 
 
-    def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request):
+    def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request) -> tuple[np.ndarray, np.ndarray]:
+
+        """Perform kriging to interpolate data using Gaussian Process Regression.
+        
+        Parameters
+        ----------
+        gpregressor: :class:`GPRegressor`
+            Gaussian Process Regressor object.
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        x_range: :class:`list[float]`
+            Range of X values to interpolate over.
+        y_range: :class:`list[float]`
+            Range of Y values to interpolate over.
+        optimizer: :class:`bool`
+            Boolean indicating whether to use an optimizer.
+        request: :class:`str`
+            Request identifier for the current leg.
+        
+        Returns
+        -------
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        var: :class:`np.ndarray`
+            Variance of the predicted values.
+        """
+
         estimated_num = 100
         xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimated_num), np.linspace(y_range[0], y_range[1], num=estimated_num)
         vals = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2]).T
@@ -93,11 +185,48 @@ class Plotter():
 
         var = np.square(z_std)
 
+        # Stiffness should never be negative, so any negative values we round to zero. 
         z_pred[z_pred < 0] = 0
 
         return z_pred, var
 
     def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent: dict=None):
+
+        """Plot individual leg with interpolation and variance fields.
+        
+        Parameters
+        ----------
+        axis_index: :class:`int`
+            Index of the subplot axis.
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        var: :class:`np.ndarray`
+            Variance of the predicted values.
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        x_range: :class:`list[float]`
+            Range of X values to interpolate over.
+        y_range: :class:`list[float]`
+            Range of Y values to interpolate over.
+        title: :class:`str`
+            Title for the plot.
+        match_scale: :class:`bool`
+            Boolean indicating whether to match the scale of plots.
+        zmin: :class:`float`
+            Global minimum value for color scaling of interpolation.
+        zmax: :class:`float`
+            Global maximum value for color scaling of interpolation.
+        var_min: :class:`float`
+            Global minimum value for color scaling of variance.
+        var_max: :class:`float`
+            Global maximum value for color scaling of variance.
+        transparent: :class:`dict`, optional
+            Dictionary containing transparency settings, by default None.
+        """
 
         z_alpha = np.ones_like(z_pred)
         if transparent is not None:
@@ -108,10 +237,44 @@ class Plotter():
 
         fields = [('Interpolation', z_pred, zmin, zmax, "Stiffness (N/m)"), ('Variance', var, var_min, var_max, "(N/m)^2")]
         for i, (field_name, field, fmin, fmax, field_unit) in enumerate(fields):
-            ax_field = self.axs[i, axis_index] if len(self.mode) > 1 else self.axs[i]
+            ax_field = self.axs[i, axis_index] if len(self.leg_list) > 1 else self.axs[i]
             self.plot_field(ax_field, field, x_range, y_range, z_alpha, match_scale, fmin, fmax, title, x, y, stiff, field_name, field_unit)
     
     def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name, field_unit):
+
+        """Plot a field (interpolation or variance) on a given axis.
+        
+        Parameters
+        ----------
+        ax: :class:`plt.Axes`
+            The axis to plot on.
+        field: :class:`np.ndarray`
+            The field data to plot.
+        x_range: :class:`list[float]`
+            Range of X values to plot.
+        y_range: :class:`list[float]`
+            Range of Y values to plot.
+        alpha: :class:`np.ndarray`
+            Alpha values for transparency.
+        match_scale: :class:`bool`
+            Boolean indicating whether to match the scale of plots.
+        colormin: :class:`float`
+            Minimum color value for the plot.
+        colormax: :class:`float`
+            Maximum color value for the plot.
+        title: :class:`str`
+            Title for the plot.
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        field_name: :class:`str`
+            Name of the field being plotted.
+        field_unit: :class:`str`
+            Unit of the field being plotted.
+        """
 
         if field_name == "Interpolation":
             im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
@@ -151,12 +314,12 @@ class Plotter():
 
             nrows = 2
 
-            if len(self.mode) > 1:
-                if 'all' not in self.mode:
-                    self.ncols = len(self.mode) + 1
+            if len(self.leg_list) > 1:
+                if 'all' not in self.leg_list:
+                    self.ncols = len(self.leg_list) + 1
                 else:
-                    self.ncols = len(self.mode)
-            elif len(self.mode) == 1:
+                    self.ncols = len(self.leg_list)
+            elif len(self.leg_list) == 1:
                 self.ncols = 1
 
             self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7), layout='tight')
@@ -195,7 +358,6 @@ class Plotter():
                 Range of x values to interpolate over.
             y_range: :class:`list[float]` 
                 Range of y values to interpolate over.
-
         """
         if self.latlon:
             offset = 0.000001
@@ -233,14 +395,13 @@ class Plotter():
 
         return x_range, y_range
     
-    def get_global_color_limits(self, z_pred_list: list[np.ndarray], var_list: list[np.ndarray]):
+    def get_global_color_limits(self, z_pred_list: list[np.ndarray], var_list: list[np.ndarray]) -> tuple[float]:
 
         r"""Calculates the global color minimum and maximum for both z_pred
-        and var based on outputs of every plot.
+            and var based on outputs of every plot.
 
             Parameters
             ----------
-
             z_pred_list: :class:`list[np.ndarray]`
                 List of each plot's interpolation array.
             var_list: :class:`list[np.ndarray]`
@@ -248,7 +409,6 @@ class Plotter():
             
             Returns
             -------
-
             global_z_min: :class:`float`
                 Global interpolation minimum for colorbar.
             global_z_max: :class:`float`
