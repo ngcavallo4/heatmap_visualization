@@ -8,8 +8,8 @@ import pandas
 ##
 ##
 ###
-### You must be in the /heatmap_visualization folder for this to work!
-PATH = "./data"
+### Replace this path folder with wherever you keep your csvs
+PATH = "./Users/natalie/Desktop/heatmap_csvs/"
 
 class CSVParser():
 
@@ -33,13 +33,11 @@ class CSVParser():
             column 2.
     """
 
-    def __init__(self, filepath: str):
+    def __init__(self, filename: str):
 
         self.data_dict = {}
         self.data_arr = []
-        self.filepath = filepath
-        
-        # filepath = os.path.join(PATH, filename) 
+        self.filepath = os.path.join(PATH, filename) 
 
         self.extract_data()
 
