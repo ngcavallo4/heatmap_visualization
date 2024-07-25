@@ -3,7 +3,7 @@ import numpy as np
 from utility.parse_csv import CSVParser
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from utility.convert_gps import gps_coords_to_meters
+from utility.convert_gps import gps_coords_to_meters, convert_gps_to_meters
 
 class Plotter():
      
@@ -15,12 +15,12 @@ class Plotter():
 
         self.initialize_subplots()
 
-    def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, normalize: bool = False):
+    def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
         csvparser = CSVParser(file)
 
-        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer, normalize)
+        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer, latlon)
 
-    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool, normalize: bool):
+    def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool, latlon: bool):
         x_arr_list = []
         y_arr_list = []
         stiff_arr_list = []
@@ -33,16 +33,15 @@ class Plotter():
         for request in self.mode:
             x, y, stiff, title = csvparser.access_data([request])
 
-            x, y = gps_coords_to_meters(x,y)
+            if not latlon:
+                x, y = gps_coords_to_meters(x,y)
+                # x, y = convert_gps_to_meters(x,y) # Alternate method 
 
             x_arr_list.append(x)
             y_arr_list.append(y)
             stiff_arr_list.append(stiff)
 
-            if normalize:
-                x, y = self.normalize(x, y)
-
-            x_range, y_range = self.organize_area(x, y, match_steps)
+            x_range, y_range = self.organize_area(x, y, match_steps, latlon = latlon)
             z_pred, var = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request)
 
             z_pred_list.append(z_pred)
@@ -58,10 +57,7 @@ class Plotter():
 
             combined_request = ",".join(self.mode)
 
-            if normalize:
-                x_combined, y_combined = self.normalize_data(x_combined, y_combined)
-
-            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, True)
+            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps, latlon=latlon)
             z_pred_combined, var_combined = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
 
             z_pred_list.append(z_pred_combined)
@@ -76,6 +72,8 @@ class Plotter():
 
 
         plt.show()
+        plt.tight_layout()
+
 
     def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request):
         estimated_num = 100
@@ -194,9 +192,9 @@ class Plotter():
 
         """
         if latlon:
-            offset = 0.25
-        else:
             offset = 0.000001
+        else: 
+            offset = 0.25
 
         x_range = [0,0]
         y_range = [0,0]
@@ -210,11 +208,11 @@ class Plotter():
                 y_range[1] = np.max(y)
                 y_range[0]= y_input_range[0]
             else:
-                x_range[0] = np.min(x) - 0.25
-                x_range[1] = np.max(x) + 0.25
+                x_range[0] = np.min(x) - offset
+                x_range[1] = np.max(x) + offset
 
-                y_range[1] = np.max(y) + 0.25
-                y_range[0] = np.min(y) - 0.25
+                y_range[1] = np.max(y) + offset
+                y_range[0] = np.min(y) - offset 
 
         else: # If not match steps, then must pass in values
 
@@ -262,11 +260,3 @@ class Plotter():
         global_z_min = np.min(z_pred_list)
         
         return global_z_min, global_z_max, global_v_min, global_v_max
-    
-    def normalize(self,x,y):
-        x_min, x_max = np.min(x), np.max(x)
-        y_min, y_max = np.min(y), np.max(y)
-        x_norm = (x - x_min) / (x_max - x_min)
-        y_norm = (y - y_min) / (y_max - y_min)
-
-        return x_norm, y_norm

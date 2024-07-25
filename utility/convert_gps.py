@@ -1,6 +1,6 @@
 import numpy as np
 
-def gps_coords_to_meters(lons, lats):
+def gps_coords_to_meters(lons, lats): 
 
     ref_lat = np.min(lats)
     ref_lon = np.min(lons)
@@ -63,61 +63,18 @@ def latlon_to_meters(lat, lon, ref_lat, ref_lon):
 
     return distance
 
-def calculate(lat, lon, ref_lat, ref_lon):
+def convert_gps_to_meters(longitudes, latitudes):
+    # Determine the reference point (minimum latitude and longitude)
+    ref_lat = np.min(latitudes)
+    ref_lon = np.min(longitudes)
 
-    R = 6378137.0 # Radius of Earth in m 
+    # Calculate distances
+    # For x_meters, latitude is constant (ref_lat) and longitude varies
+    x_meters = latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
+    # For y_meters, longitude is constant (ref_lon) and latitude varies
+    y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
 
-    # Convert degrees to radians using NumPy
-    lat = np.deg2rad(lat)
-    ref_lat = np.deg2rad(ref_lat)
-    lon = np.deg2rad(lon)
-    ref_lon = np.deg2rad(ref_lon)
-    
-    # Calculate differences
-    delta_lat_w_v = lat - ref_lat
-    delta_lon_w_v = lon - ref_lon
-    delta_lat_u_v = np.pi / 2 - lat  # lat_u is 90 degrees (north pole)
-    delta_lat_u_w = np.pi / 2 - ref_lat
-
-    # Calculate haversine of theta
-    hav_theta = np.sin(delta_lat_w_v / 2)**2 + np.cos(ref_lat) * np.cos(lat) * np.sin(delta_lon_w_v / 2)**2
-    
-    # Calculate c using the haversine formula
-    c = 2 * R * np.arcsin(np.sqrt(hav_theta))
-    
-    # Additional calculations as per the provided formulas
-    a = R * delta_lat_u_v
-    b = delta_lat_u_w * R
-    d = delta_lat_w_v * R
-
-    # Spherical law of cosines to calculate A and B
-    A = np.arcsin((np.sin(a) * np.sin(c)) / np.sin(c)) 
-    B = np.arcsin((np.sin(b) * np.sin(c)) / np.sin(c))
-
-    # Using constructed geometry to find angles D and E 
-    D = np.pi / 2 - B
-    E = np.pi - A
-
-    # cos(c) = cos(a)*cos(b) + sin(a)*sin(b)*cos(C)
-    
-    # cos(e) = cos(c)*cos(d) + sin(c)*sin(d)*cos(E) 
-
-    temp = np.cos(c)*np.cos(d) + np.sin(c)*np.sin(d)*np.cos(E)
-    e = np.arccos(temp)
-
-    # NOTE: SOMETHING IS GOING WRONG HERE......... 
-    # temp = (np.sin(E) * np.sin(d)) / np.sin(D)
-    # if temp > 1:
-    #     temp = 1
-    # e = np.arcsin(temp)
-
-    long_m = np.abs(e)
-    lat_m = np.abs(d)
-
-    if np.isnan(long_m) or np.isnan(lat_m):
-        raise ValueError("NaN Arg Detected")
-
-    return long_m, lat_m 
+    return x_meters, y_meters
 
 
 

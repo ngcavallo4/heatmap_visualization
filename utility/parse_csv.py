@@ -8,7 +8,8 @@ import pandas
 ##
 ##
 ###
-### Replace this path folder with wherever you keep your csvs
+### If you want to store all your csvs in a folder and just pass in the 
+### filename, put the path to the folder here. 
 PATH = "/Users/natalie/Desktop/heatmap_csvs/"
 
 class CSVParser():
@@ -37,7 +38,9 @@ class CSVParser():
 
         self.data_dict = {}
         self.data_arr = []
-        self.filepath = os.path.join(PATH, filename) 
+        # self.filepath = os.path.join(PATH, filename) 
+
+        self.filepath = filename
 
         self.extract_data()
 
