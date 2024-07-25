@@ -7,8 +7,8 @@ class KrigeModel():
 
     r"""Calculates empirical variogram model and performs kriging on datasets.
 
-        Parameters:
-
+        Attributes
+        ----------
         x: :class:`np.ndarray`
             X position data.
         y: :class:`np.ndarray`
@@ -24,6 +24,21 @@ class KrigeModel():
     """
 
     def __init__(self,x,y,stiff,num_bins, length_scale = 1.0):
+        """Initialize the KrigeModel class with the given parameters
+        
+        Parameters
+        ----------
+        x: :class:`np.ndarray`
+            X position data.
+        y: :class:`np.ndarray`
+            Y position data.
+        stiff: :class:`np.ndarray`
+            Stiffness data, tied to x-y position.
+        num_bins: :class:`float`
+            Number of bins for the emperical variogram.
+        length_scale: :class:`float`
+            Length scale for the variogram.
+        """
         self.x = x
         self.y = y
         self.stiff = stiff
@@ -100,7 +115,6 @@ class KrigeModel():
 
             Parameters
             ----------
-
             model_type: :class:`str`
                 Name of the model to be fitted.
             
@@ -132,10 +146,12 @@ class KrigeModel():
             
             Parameters
             ----------
-
             model: :class:`gs.CovModel`
                 Covariance model calculated from fit_model. 
-            
+            x_range: :class:`list[float]`
+                Range of x-values to interpolate over.
+            y_range: :class:`list[float]`
+                Range of y-values to interpolate over
             Returns
             -------
 
@@ -145,12 +161,6 @@ class KrigeModel():
             var: :class:`np.ndarray`
                 2D array of the variance of the interpolated values over the same range
                 as the interpolated values. 
-            x_interpolation_range: :class:`np.ndarray`
-                X interpolation range as calculated from organize_kriging_area, used for
-                plotting
-            y_interpolation_range: :class:`np.ndarray`
-                Y interpolation range as calculated from organize_kriging_area, used for
-                plotting
         """
         
         x_vector = np.linspace(x_range[0],x_range[1], 100) # N

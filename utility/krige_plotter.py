@@ -117,7 +117,24 @@ class KrigingPlotter():
                     match_scale: bool = False, transparent: dict = None, x_input_range: list = None, 
                     y_input_range: list = None):
         r"""Plots each leg's interpolation, and then each leg combined if there
-            are multiple legs. 
+        are multiple legs. 
+
+        Parameters
+        ----------
+        csvparser: :class:`CSVParser`
+            CSV parser object to access data.
+        match_steps: :class:`bool`
+            Boolean indicating whether to match steps.
+        length_scale: :class:`dict`
+            Dictionary mapping leg numbers to corresponding length scale values.
+        match_scale: :class:`bool`, optional
+            Boolean indicating whether to match the scale of plots, by default False.
+        transparent: :class:`dict`, optional
+            Dictionary containing transparency settings, by default None.
+        x_input_range: :class:`list[float]`, optional
+            Array of length 2 with the lower and upper bounds of the x range, required if match_steps is False, by default None.
+        y_input_range: :class:`list[float]`, optional
+            Array of length 2 with the lower and upper bounds of the y range, required if match_steps is False, by default None.
         """
         x_arr_list= []
         y_arr_list = []
@@ -154,7 +171,7 @@ class KrigingPlotter():
             z_pred_list.append(z_pred)
             var_list.append(var)
 
-            # Adds results to a dictionarty for iterating through in plotting function
+            # Adds results to a dictionaty for iterating through in plotting function
             kriging_results[leg] = (z_pred, var, x, y, stiff, title, fitted_model,
                                         x_range,
                                         y_range,
@@ -209,6 +226,42 @@ class KrigingPlotter():
                 x: np.ndarray, y: np.ndarray, stiff: np.ndarray, x_range: list[float],
                 y_range: list[float], title: str, axis_index: int, match_scale: bool=True, zmin: float=None,
                 zmax: float=None, var_min: float=None, var_max: float=None, transparent: dict=None):
+        """Plot an individual leg with interpolation and variance fields.
+
+        Parameters
+        ----------
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        var: :class:`np.ndarray`
+            Variance of the predicted values.
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        x_range: :class:`list[float]`
+            Range of X values to interpolate over.
+        y_range: :class:`list[float]`
+            Range of Y values to interpolate over.
+        title: :class:`str`
+            Title for the plot.
+        axis_index: :class:`int`
+            Index of the subplot axis.
+        match_scale: :class:`bool`, optional
+            Boolean indicating whether to match the scale of plots, by default True.
+        zmin: :class:`float`, optional
+            Global minimum value for color scaling of interpolation, by default None.
+        zmax: :class:`float`, optional
+            Global maximum value for color scaling of interpolation, by default None.
+        var_min: :class:`float`, optional
+            Global minimum value for color scaling of variance, by default None.
+        var_max: :class:`float`, optional
+            Global maximum value for color scaling of variance, by default None.
+        transparent: :class:`dict`, optional
+            Dictionary containing transparency settings, by default None.
+        """
+        
         font = {'size': 7}
         plt.rc('font', **font)
 
@@ -235,6 +288,38 @@ class KrigingPlotter():
                 stiff: np.ndarray, field_name: str, match_scale: bool=True,
                 colormin: float=None, colormax: float=None):
         
+        """Plot a field (interpolation or variance) on a given axis.
+
+        Parameters
+        ----------
+        ax: :class:`matplotlib.axes.Axes`
+            The axis to plot on.
+        field: :class:`np.ndarray`
+            The field data to plot.
+        x_range: :class:`list[float]`
+            Range of X values to plot.
+        y_range: :class:`list[float]`
+            Range of Y values to plot.
+        alpha: :class:`np.ndarray`
+            Alpha values for transparency.
+        title: :class:`str`
+            Title for the plot.
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        field_name: :class:`str`
+            Name of the field being plotted.
+        match_scale: :class:`bool`, optional
+            Boolean indicating whether to match the scale of plots, by default True.
+        colormin: :class:`float`, optional
+            Minimum color value for the plot, by default None.
+        colormax: :class:`float`, optional
+            Maximum color value for the plot, by default None.
+        """
+        
         # Plotting field using imshow
         if field_name == "Interpolation":
             im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
@@ -260,6 +345,34 @@ class KrigingPlotter():
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
     def perform_kriging(self, x: np.ndarray, y: np.ndarray, stiff: np.ndarray, len_scale: float, x_range: list[float], y_range: list[float]):
+        """Perform kriging on passed in values.
+
+        Parameters
+        ----------
+        x: :class:`np.ndarray`
+            X coordinate array.
+        y: :class:`np.ndarray`
+            Y coordinate array.
+        stiff: :class:`np.ndarray`
+            Stiffness values array.
+        len_scale: :class:`float`
+            Length scale for the kriging model.
+        x_range: :class:`list[float]`
+            Range of X values to interpolate over.
+        y_range: :class=`list[float]`
+            Range of Y values to interpolate over.
+
+        Returns
+        -------
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        var: :class:`np.ndarray`
+            Variance of the predicted values.
+        fitted_model: :class:`object`
+            The fitted kriging model.
+        """
+
+
         # Performs kriging on passed in values 
         krige_model = KrigeModel(x, y, stiff, self.bin_num, len_scale)
         model_type, models_dict, bin_centers, gamma = krige_model.rank_models()
@@ -271,6 +384,7 @@ class KrigingPlotter():
         return z_pred, var, fitted_model
     
     def get_global_color_limits(self, z_pred_list: list[np.ndarray], var_list: list[np.ndarray]):
+        
         r"""Calculates the global color minimum and maximum for both z_pred
         and var based on outputs of every plot.
 

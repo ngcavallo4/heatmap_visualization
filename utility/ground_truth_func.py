@@ -5,7 +5,6 @@ def ground_truth_func(x,y):
 
         Parameters
         ----------
-
         x: :class:`np.ndarray`
             X position data.
         y: :class:`np.ndarray`
@@ -13,7 +12,6 @@ def ground_truth_func(x,y):
 
         Returns
         -------
-
         g_t_f: :class:`callable`
             Function that performs element-wise operation on ndarray 
             inputs.

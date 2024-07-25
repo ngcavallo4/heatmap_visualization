@@ -4,9 +4,8 @@ class KrigeArr():
 
     r"""Class that generates toy Spirit data.
 
-        Parameter
-        ---------
-
+        Attributes
+        ----------
         p0: :class:`np.ndarray`
             Initial point, array of length 2. Index 0 is x-position, 
             index 1 is y-position. 
@@ -18,17 +17,44 @@ class KrigeArr():
             Number of points along the traversal. 
         ground_truth_func: :class:`callable`
             Function that generates the stiffness values based on x and y values.
+        x_arr: :class:`np.ndarray`
+            Array of x positions generated along the traverse.
+        y_arr: :class:`np.ndarray`
+            Array of y positions generated along the traverse.
+        stiff_arr: :class:`np.ndarray`
+            Array of stiffness values corresponding to the x and y positions.
+
     """
     
     def __init__(self, p0: np.ndarray, slope: float, y_dist: float, num_points: int, ground_truth_func):
+
+        """Initializes the KrigeArr class with the given parameters
+
+        Parameters
+        ----------
+        p0: :class:`np.ndarray`
+            Initial point, array of length 2. Index 0 is x-position, 
+            index 1 is y-position. 
+        slope: :class:`float`
+            Slope of the footstep traverse. 
+        y_dist: :class:`float`
+            Vertical distance between points.
+        num_points: :class:`int`
+            Number of points along the traversal. 
+        ground_truth_func: :class:`callable`
+            Function that generates the stiffness values based on x and y values.
+        """
         self.p0 = p0
-        self.x_arr = [p0[0]]
-        self.y_arr = [p0[1]]
-        self.stiff_arr = [ground_truth_func(p0[0],p0[1])]
         self.slope = slope
         self.y_dist = y_dist
         self.num_points = num_points
         self.ground_truth_func = ground_truth_func
+
+        self.x_arr = [p0[0]]
+        self.y_arr = [p0[1]]
+        self.stiff_arr = [ground_truth_func(p0[0],p0[1])]
+        
+        
         
         self.array_setup()
     

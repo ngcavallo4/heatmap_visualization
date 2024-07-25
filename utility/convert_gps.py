@@ -1,45 +1,105 @@
 import numpy as np
 
-def gps_coords_to_meters(lons, lats): 
+def gps_coords_to_meters(lons: np.ndarray, lats: np.ndarray):
+    """Convert GPS coordinates (longitude and latitude) to meters using the
+    Haversine formula.
+
+    Parameters
+    ----------
+    lons: :class:`np.ndarray`
+        Array of longitudes.
+    lats: :class:`np.ndarray`
+        Array of latitudes.
+
+    Returns
+    -------
+    long_m_array: :class:`np.ndarray`
+        Array of distances in meters along the longitude.
+    lat_m_array: :class:`np.ndarray`
+        Array of distances in meters along the latitude.
+    """
+
 
     ref_lat = np.min(lats)
     ref_lon = np.min(lons)
 
-    long_m_array = []
+    lon_m_array = []
     lat_m_array = []
     
     for lat, lon in zip(lats, lons):
         long_m, lat_m = haversine(lat, lon, ref_lat, ref_lon)
-        long_m_array.append(long_m)
+        lon_m_array.append(long_m)
         lat_m_array.append(lat_m)
 
-    return np.array(long_m_array), np.array(lat_m_array)
+    lats_m = np.array(lat_m_array)
+    lons_m = np.array(lon_m_array)
 
-def haversine(lat, lon, ref_lat, ref_lon):
+    return lons_m, lats_m
 
+def haversine(lat: float, lon: float, ref_lat: float, ref_lon: float):
+    """Calculate the distance in meters between two points on the Earth's surface
+    using the Haversine formula.
+
+    Parameters
+    ----------
+    lat: :class:`float`
+        Latitude of the point.
+    lon: :class:`float`
+        Longitude of the point.
+    ref_lat: :class:`float`
+        Reference latitude.
+    ref_lon: :class:`float`
+        Reference longitude.
+
+    Returns
+    -------
+    b: :class:`float`
+        Distance in meters along the longitude.
+    a: :class:`float`
+        Distance in meters along the latitude.
+    """
     # Earth radius in meters
-        R = 6378137.0
+    R = 6378137.0
 
-        # Convert degrees to radians
-        lat_v = np.deg2rad(lat)
-        lon_v = np.deg2rad(lon)
-        lat_u = np.deg2rad(ref_lat)
-        lon_u = np.deg2rad(ref_lon)
-        lat_w = lat_u 
-        lon_w = lon_v 
+    # Convert degrees to radians
+    lat_v = np.deg2rad(lat)
+    lon_v = np.deg2rad(lon)
+    lat_u = np.deg2rad(ref_lat)
+    lon_u = np.deg2rad(ref_lon)
+    lat_w = lat_u 
+    lon_w = lon_v 
 
-        # Haversine formula
-        dlon_u_w = lon_w - lon_u
+    # Haversine formula
+    dlon_u_w = lon_w - lon_u
 
-        hav_theta_u_w = np.cos(lat_u) * np.cos(lat_w) * np.sin(dlon_u_w/ 2)**2
+    hav_theta_u_w = np.cos(lat_u) * np.cos(lat_w) * np.sin(dlon_u_w/ 2)**2
 
-        # Distance in meters
-        b = 2*R*np.arcsin(np.sqrt(hav_theta_u_w))
-        a = np.abs(lat_v-lat_w)*R
+    # Distance in meters
+    b = 2*R*np.arcsin(np.sqrt(hav_theta_u_w))
+    a = np.abs(lat_v-lat_w)*R
 
-        return b,a
+    return b,a
 
-def latlon_to_meters(lat, lon, ref_lat, ref_lon):
+def latlon_to_meters(lat: np.ndarray, lon: np.ndarray, ref_lat: float, ref_lon: float):
+    """Convert latitude and longitude coordinates to meters using the Haversine formula.
+
+    Parameters
+    ----------
+    lat: :class:`np.ndarray`
+        Array of latitudes.
+    lon: :class:`np.ndarray`
+        Array of longitudes.
+    ref_lat: :class:`float`
+        Reference latitude.
+    ref_lon: :class:`float`
+        Reference longitude.
+
+    Returns
+    -------
+    distance: :class:`np.ndarray`
+        Array of distances in meters.
+    """
+
     # https://en.wikipedia.org/wiki/Haversine_formula 
     # Look in Formulation for equation
     
@@ -63,7 +123,25 @@ def latlon_to_meters(lat, lon, ref_lat, ref_lon):
 
     return distance
 
-def convert_gps_to_meters(longitudes, latitudes):
+def convert_gps_to_meters(longitudes: np.ndarray, latitudes: np.ndarray):
+    """Convert GPS coordinates (longitude and latitude) to meters using the
+    reference point as the minimum of the coordinates.
+
+    Parameters
+    ----------
+    longitudes: :class:`np.ndarray`
+        Array of longitudes.
+    latitudes: :class:`np.ndarray`
+        Array of latitudes.
+
+    Returns
+    -------
+    x_meters: :class:`np.ndarray`
+        Array of distances in meters along the longitude.
+    y_meters: :class:`np.ndarray`
+        Array of distances in meters along the latitude.
+    """
+
     # Determine the reference point (minimum latitude and longitude)
     ref_lat = np.min(latitudes)
     ref_lon = np.min(longitudes)
@@ -75,19 +153,3 @@ def convert_gps_to_meters(longitudes, latitudes):
     y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
 
     return x_meters, y_meters
-
-
-
-
-
-    
-
-
-
-
- 
-
-
-    
-
-

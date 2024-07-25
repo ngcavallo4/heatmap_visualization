@@ -11,9 +11,8 @@ class DataGenerator():
         traversals. 
 
         
-        Parameters
+        Attributes
         ----------
-
         steps_x_max: :class:`float`
             The maximum x-coordinate value for the generated steps.
         steps_y_max: :class:`float`
@@ -28,6 +27,9 @@ class DataGenerator():
     """
 
     def __init__(self):
+
+        """Initialize the DataGenerator class.
+        """
         self.steps_x_max = None
         self.steps_y_max = None
         self.x = None
