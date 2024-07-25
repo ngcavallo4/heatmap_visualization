@@ -1,5 +1,44 @@
 import numpy as np
 
+def gps_coords_to_meters(lons, lats):
+
+    ref_lat = np.min(lats)
+    ref_lon = np.min(lons)
+
+    long_m_array = []
+    lat_m_array = []
+    
+    for lat, lon in zip(lats, lons):
+        long_m, lat_m = haversine(lat, lon, ref_lat, ref_lon)
+        long_m_array.append(long_m)
+        lat_m_array.append(lat_m)
+
+    return np.array(long_m_array), np.array(lat_m_array)
+
+def haversine(lat, lon, ref_lat, ref_lon):
+
+    # Earth radius in meters
+        R = 6378137.0
+
+        # Convert degrees to radians
+        lat_v = np.deg2rad(lat)
+        lon_v = np.deg2rad(lon)
+        lat_u = np.deg2rad(ref_lat)
+        lon_u = np.deg2rad(ref_lon)
+        lat_w = lat_u 
+        lon_w = lon_v 
+
+        # Haversine formula
+        dlon_u_w = lon_w - lon_u
+
+        hav_theta_u_w = np.cos(lat_u) * np.cos(lat_w) * np.sin(dlon_u_w/ 2)**2
+
+        # Distance in meters
+        b = 2*R*np.arcsin(np.sqrt(hav_theta_u_w))
+        a = np.abs(lat_v-lat_w)*R
+
+        return b,a
+
 def latlon_to_meters(lat, lon, ref_lat, ref_lon):
     # https://en.wikipedia.org/wiki/Haversine_formula 
     # Look in Formulation for equation
@@ -8,10 +47,10 @@ def latlon_to_meters(lat, lon, ref_lat, ref_lon):
     R = 6378137.0
 
     # Convert degrees to radians
-    lat = np.radians(lat)
-    lon = np.radians(lon)
-    ref_lat = np.radians(ref_lat)
-    ref_lon = np.radians(ref_lon)
+    lat = np.deg2rad(lat)
+    lon = np.deg2rad(lon)
+    ref_lat = np.deg2rad(ref_lat)
+    ref_lon = np.deg2rad(ref_lon)
 
     # Haversine formula
     dlat = lat - ref_lat
@@ -24,67 +63,9 @@ def latlon_to_meters(lat, lon, ref_lat, ref_lon):
 
     return distance
 
-def gps_to_meters(latitudes, longitudes):
-    # Determine the reference point (minimum latitude and longitude)
-    ref_lat = np.min(latitudes) - 0.000002
-    ref_lon = np.min(longitudes) - 0.000002
-
-    x_meters = []
-    y_meters = []
-
-    # Calculate distances
-    for i in len(latitudes):
-        lat = latitudes[i]
-        lon = longitudes[i]
-        # d = latlon_to_meters(lat,lon,ref_lat,ref_lon)
-
-        x_met, y_met = law_of_sines(ref_lat, ref_lon, lat, lon)
-        x_meters.append(x_met)
-        y_met.append(y_met)
-
-    x_meters = np.array(x_meters)
-    y_meters = np.array(y_meters)
-
-    return x_meters, y_meters
-
-def law_of_sines(ref_lat: float,ref_lon: float,lat: float, lon: float):
-
-    R = 6378137.0
-    
-    alpha = np.deg2rad(90 - ref_lat) # central angle defining arc a 
-    a = alpha*R
-
-    beta = np.deg2rad(90 - lat) # central angle defining arc b
-    b = beta*R 
-
-    delta = np.deg2rad(lat - ref_lat) # sin^2(dlat_w_v/2) is even function so doesn't matter order
-    C = np.deg2rad(lon - ref_lon) # difference in longitudes, also angle opposite side c (close to north pole)
-
-    # haversine function = sin(theta/2)**2
-
-    hav_theta = np.sin(delta/2)**2 + np.cos(ref_lat)*np.cos(lat)*np.sin(C/2)**2 # haversine formula
-    c = 2*R*np.arcsin(np.sqrt(hav_theta)) # archaversine formula
-
-    # solving for angles A and B using spherical law of sines
-    A = np.arcsin((np.sin(a)*np.sin(C))/np.sin(c))
-    B = np.arcsin((np.sin(b)*np.sin(C))/np.sin(c))
-
-    D = np.pi/2 - B # D is along a line of latitude and makes a right angle at reference pt
-    E = np.pi - A # A makes a straight line with E
-
-    d = delta*R # since d is along a line of latitude, we can use the difference in latitude directly 
-
-    # solving for e using spherical law of sines
-    e = np.arcsin((np.sin(E)*np.sin(d))/np.sin(D)) 
-
-    long_m = e 
-    lat_m = d 
-
-    return long_m, lat_m 
-
 def calculate(lat, lon, ref_lat, ref_lon):
 
-    R = 6378100 # Radius of Earth in m 
+    R = 6378137.0 # Radius of Earth in m 
 
     # Convert degrees to radians using NumPy
     lat = np.deg2rad(lat)
@@ -116,33 +97,28 @@ def calculate(lat, lon, ref_lat, ref_lon):
     # Using constructed geometry to find angles D and E 
     D = np.pi / 2 - B
     E = np.pi - A
+
+    # cos(c) = cos(a)*cos(b) + sin(a)*sin(b)*cos(C)
     
+    # cos(e) = cos(c)*cos(d) + sin(c)*sin(d)*cos(E) 
+
+    temp = np.cos(c)*np.cos(d) + np.sin(c)*np.sin(d)*np.cos(E)
+    e = np.arccos(temp)
+
     # NOTE: SOMETHING IS GOING WRONG HERE......... 
-    e = np.arcsin((np.sin(E) * np.sin(d)) / np.sin(D))
+    # temp = (np.sin(E) * np.sin(d)) / np.sin(D)
+    # if temp > 1:
+    #     temp = 1
+    # e = np.arcsin(temp)
 
     long_m = np.abs(e)
     lat_m = np.abs(d)
 
     if np.isnan(long_m) or np.isnan(lat_m):
-        raise ValueError("NaN Arg Detecte")
+        raise ValueError("NaN Arg Detected")
 
     return long_m, lat_m 
 
-def gps_coords_to_meters(lons, lats):
-
-    ref_lat = np.min(lats)
-    ref_lon = np.min(lons)
-
-    long_m_array = []
-    lat_m_array = []
-    
-    for lat, lon in zip(lats, lons):
-        long_m, lat_m = calculate(lat, lon, ref_lat, ref_lon)
-        long_m_array.append(long_m)
-        lat_m_array.append(lat_m)
-
-    
-    return np.array(long_m_array), np.array(lat_m_array)
 
 
 

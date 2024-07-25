@@ -3,7 +3,7 @@ import numpy as np
 from utility.parse_csv import CSVParser
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from tools.convert_gps import gps_to_meters
+from utility.convert_gps import gps_coords_to_meters
 
 class Plotter():
      
@@ -33,7 +33,7 @@ class Plotter():
         for request in self.mode:
             x, y, stiff, title = csvparser.access_data([request])
 
-            x, y = gps_to_meters(x,y)
+            x, y = gps_coords_to_meters(x,y)
 
             x_arr_list.append(x)
             y_arr_list.append(y)
@@ -158,7 +158,7 @@ class Plotter():
             self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7), layout='tight')
     
     def organize_area(self, x, y, match_steps: bool, x_input_range = None,
-                                                        y_input_range = None):
+                                                        y_input_range = None, latlon: bool = False):
 
         r"""Returns ranges x_range and y_range based on whether the area
             will match the input data or not.
@@ -193,6 +193,10 @@ class Plotter():
                 Range of y values to interpolate over.
 
         """
+        if latlon:
+            offset = 0.25
+        else:
+            offset = 0.000001
 
         x_range = [0,0]
         y_range = [0,0]
