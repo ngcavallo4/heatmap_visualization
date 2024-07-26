@@ -7,6 +7,12 @@ import sklearn
 class Heatmap():
 
     """A class to perform Gaussian Process Regression on passed in data.
+    Specify whether you want to convert latlon to m upon initializing
+    an instance of Heatmap with the boolean **latlon_to_m**. You will also
+    want to initialize the Heatmap with hyperparameters describing the 
+    kernel. To add points to the heatmap, call **add_points**. To perform 
+    interpolation, call **update_heatmap**, which returns an array of 
+    interpolated values z_pred.  
     
     Attributes
     ----------
@@ -27,11 +33,13 @@ class Heatmap():
 
     """
 
-    def __init__(self, length_scale: dict, sigma_f: dict, noise_level: dict, nu: float):
+    def __init__(self, latlon_to_m: bool, length_scale: dict, sigma_f: dict, noise_level: dict, nu: float):
         """Initialize the GPRegressor class with the given parameters.
 
         Parameters
         ----------
+        latlon_to_m: :class:`bool`
+            Boolean indicating whether to convert x-y position in lat/lon to meters.
         length_scale: :class:`dict`
             Dictionary mapping leg numbers to corresponding length scale values.
         sigma_f: :class:`float`
@@ -40,8 +48,8 @@ class Heatmap():
             Noise level parameter for the Gaussian Process.
         nu: :class:`float`
             Nu paramater for the Matérn kernel. 
-        
         """
+        self.latlon_to_m = latlon_to_m
         self.x = np.array([])
         self.y = np.array([])
         self.stiff = np.array([])
@@ -50,8 +58,8 @@ class Heatmap():
         self.noise_level = noise_level
         self.nu = nu 
 
-    def update_kriging(self, x: float, y: float, stiff: float): 
-        """Update the kriging model with new data points and perform kriging.
+    def update_heatmap(self, x: float, y: float, stiff: float): 
+        """Update the heatmap model with new data points and perform interpolation.
 
         Parameters
         ----------
@@ -90,8 +98,12 @@ class Heatmap():
         self.y = np.concatenate(self.y, y)
         self.stiff = np.concatenate(self.stiff, stiff)
 
-    def perform_kriging(self, x: np.ndarray, y: np.ndarray, stiff: np.ndarray, x_range: list[int], y_range: list[int]) -> tuple[np.ndarray, np.ndarray]:
-        """Perform kriging to interpolate data using Gaussian Process Regression.
+        if self.latlon_to_m:
+            self.x, self.y = self.convert_gps_to_meters(self.x,self.y)
+
+
+    def perform_interpolation(self, x: np.ndarray, y: np.ndarray, stiff: np.ndarray, x_range: list[int], y_range: list[int]) -> tuple[np.ndarray, np.ndarray]:
+        """Interpolate data using Gaussian Process Regression.
 
         Parameters
         ----------
@@ -238,3 +250,77 @@ class Heatmap():
         y_range[0] = np.min(y) - offset 
 
         return x_range, y_range
+    
+    def latlon_to_meters(self, lat: np.ndarray, lon: np.ndarray, ref_lat: float, ref_lon: float):
+        """Convert latitude and longitude coordinates to meters using the Haversine formula.
+
+        Parameters
+        ----------
+        lat: :class:`np.ndarray`
+            Array of latitudes.
+        lon: :class:`np.ndarray`
+            Array of longitudes.
+        ref_lat: :class:`float`
+            Reference latitude.
+        ref_lon: :class:`float`
+            Reference longitude.
+
+        Returns
+        -------
+        distance: :class:`np.ndarray`
+            Array of distances in meters.
+        """
+
+        # https://en.wikipedia.org/wiki/Haversine_formula 
+        # Look in Formulation for equation
+        
+        # Earth radius in meters
+        R = 6378137.0
+
+        # Convert degrees to radians
+        lat = np.deg2rad(lat)
+        lon = np.deg2rad(lon)
+        ref_lat = np.deg2rad(ref_lat)
+        ref_lon = np.deg2rad(ref_lon)
+
+        # Haversine formula
+        dlat = lat - ref_lat
+        dlon = lon - ref_lon
+
+        hav_theta = np.sin(dlat / 2)**2 + np.cos(ref_lat) * np.cos(lat) * np.sin(dlon / 2)**2
+
+        # Distance in meters
+        distance = 2*R*np.arcsin(np.sqrt(hav_theta))
+
+        return distance
+
+    def convert_gps_to_meters(self, longitudes: np.ndarray, latitudes: np.ndarray):
+        """Convert GPS coordinates (longitude and latitude) to meters using the
+        reference point as the minimum of the coordinates.
+
+        Parameters
+        ----------
+        longitudes: :class:`np.ndarray`
+            Array of longitudes.
+        latitudes: :class:`np.ndarray`
+            Array of latitudes.
+
+        Returns
+        -------
+        x_meters: :class:`np.ndarray`
+            Array of distances in meters along the longitude.
+        y_meters: :class:`np.ndarray`
+            Array of distances in meters along the latitude.
+        """
+
+        # Determine the reference point (minimum latitude and longitude)
+        ref_lat = np.min(latitudes)
+        ref_lon = np.min(longitudes)
+
+        # Calculate distances
+        # For x_meters, latitude is constant (ref_lat) and longitude varies
+        x_meters = latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
+        # For y_meters, longitude is constant (ref_lon) and latitude varies
+        y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
+
+        return x_meters, y_meters

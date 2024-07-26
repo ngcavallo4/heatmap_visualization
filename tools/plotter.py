@@ -23,7 +23,7 @@ class Plotter():
             Boolean indicating whether coordinates are in latitude and longitude.
         """
      
-    def __init__(self, leg_list: list[str]):
+    def __init__(self, leg_list: list[str], ):
         """Initialize the Plotter class with the given leg list.
         
         Parameters
@@ -62,8 +62,8 @@ class Plotter():
 
         csvparser = CSVParser(file)
     
-        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
         self.latlon = latlon
+        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
 
     def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool):
 
@@ -134,9 +134,9 @@ class Plotter():
         for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index) in results.items():
             self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent)
 
-
-        plt.show()
         plt.tight_layout()
+        plt.show()
+        
 
 
     def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request) -> tuple[np.ndarray, np.ndarray]:
@@ -280,8 +280,10 @@ class Plotter():
             im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
         else:
             im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
+
         if match_scale:
             im.norm.autoscale([colormin, colormax])
         if field_name == "Interpolation":
@@ -291,22 +293,35 @@ class Plotter():
         ax.tick_params(axis='both', which='major', labelsize=7)
         ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        cbar = self.fig.colorbar(im, ax=ax, shrink=0.7)
+        cbar = self.fig.colorbar(im, ax=ax, shrink=0.9)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
-        cbar.set_label(f'{field_unit}', rotation=270, labelpad = 14)
 
-        # Set x-axis label
+        if field_name == "Variance":
+            min_var = np.round(np.min(field), decimals = 5)
+            max_var = np.round(np.max(field), decimals = 5)
+            minor_ticks = [min_var, max_var]
+            cbar.ax.yaxis.set_minor_locator(ticker.FixedLocator(minor_ticks))
+            cbar.ax.tick_params(which='minor', color='red')
+            cbar.ax.yaxis.set_tick_params(which='minor', length=4)
+            cbar.ax.yaxis.set_ticklabels([f"Min: {min_var}", f"Max: {max_var}"], minor=True, color = 'red')
+            print(f"{title} var min: {min_var}\n")
+            print(f"{title} var max: {max_var}\n")
+        if field_name == "Variance":
+            cbar.set_label(f'{field_unit}', rotation=270, labelpad = -15)
+        else:
+            cbar.set_label(f'{field_unit}', rotation=270, labelpad = 15)
+
         offset_text = ax.xaxis.get_offset_text()
         offset_text.set_size(7)
         offset_text = ax.yaxis.get_offset_text()
         offset_text.set_size(7)
-        if self.latlon:
+        if not self.latlon:
+            ax.set_xlabel("X Position (m)",fontsize=10)
+            ax.set_ylabel("Y Position (m)",loc='center',fontsize=10)
+        else: 
             ax.set_xlabel("Longitude(º)",fontsize=10)
             ax.xaxis.set_label_coords(0.5, -0.19)
             ax.set_ylabel("Latitude(º)",loc='center',fontsize=10)
-        else: 
-            ax.set_xlabel("X Position (m)",fontsize=10)
-            ax.set_ylabel("Y Position (m)",loc='center',fontsize=10)
             
     def initialize_subplots(self):
             r"""Sets up rows of subplots based on which legs are being plotted.
@@ -419,10 +434,10 @@ class Plotter():
                 Global variance maximum for colorbar.
         """
 
-        global_v_max = np.max(var_list)
-        global_v_min = np.min(var_list)
+        global_v_max = np.max(var_list) + 0.1
+        global_v_min = np.min(var_list) - 0.1
 
-        global_z_max = np.max(z_pred_list)
-        global_z_min = np.min(z_pred_list)
+        global_z_max = np.max(z_pred_list) + 0.1
+        global_z_min = np.min(z_pred_list) - 0.1
         
         return global_z_min, global_z_max, global_v_min, global_v_max

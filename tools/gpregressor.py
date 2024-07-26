@@ -139,5 +139,6 @@ class GPRegressor():
         # information = np.exp(-np.square(z_std))
         kernel = gp.kernel_
         params = kernel.get_params()
+        params = (params['k1'], f"noise level: {params['k2__noise_level']}")
     
         return z_pred, z_std, params
