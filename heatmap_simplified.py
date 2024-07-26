@@ -319,8 +319,8 @@ class Heatmap():
 
         # Calculate distances
         # For x_meters, latitude is constant (ref_lat) and longitude varies
-        x_meters = latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
+        x_meters = self.latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
         # For y_meters, longitude is constant (ref_lon) and latitude varies
-        y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
+        y_meters = self.latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
 
         return x_meters, y_meters
