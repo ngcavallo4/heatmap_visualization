@@ -1,6 +1,9 @@
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, WhiteKernel, Matern, RationalQuadratic, ConstantKernel as C
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import ticker 
+from scipy.interpolate import interp1d
 
 class GPRegressor():
     """
@@ -122,7 +125,7 @@ class GPRegressor():
         """
 
     # Instantiate the Gaussian Process Regressor
-        if (not optimizer):
+        if optimizer:
             gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=0)
         else:
             kernel = C(10)*RBF(1.0)
@@ -132,13 +135,103 @@ class GPRegressor():
         gp.fit(data, values)
 
         # Make predictions on new data points
-        data_new = prediction_range.T
-        z_pred, z_std = gp.predict(data_new, return_std=True)
+        prediction_range = prediction_range.T
+        z_pred, z_std = gp.predict(prediction_range, return_std=True)
         
         #calculate discrepancy
         # information = np.exp(-np.square(z_std))
         kernel = gp.kernel_
         params = kernel.get_params()
-        params = (params['k1'], f"noise level: {params['k2__noise_level']}")
+        # params = (params['k1'], f"noise level: {params['k2__noise_level']}")
     
         return z_pred, z_std, params
+    
+    def Gaussian_Estimation_1D(self, data, values, prediction_range,  optimizer: bool, kernel = None):
+        """
+        Perform Gaussian Process Regression to fit the model and make predictions.
+
+        Parameters
+        ----------
+        data: :class:`np.ndarray`
+            Array of input data points.
+        values: :class:`np.ndarray`
+            Array of values corresponding to the input data points.
+        prediction_range: :class:`np.ndarray`
+            Array of points where predictions are to be made.
+        optimizer: :class:`bool`
+            Boolean indicating whether to use an optimizer.
+        kernel: :class:`sklearn.gaussian_process.kernels.Kernel`, optional
+            Kernel to be used for the Gaussian Process, by default None.
+
+        Returns
+        -------
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        z_std: :class:`np.ndarray`
+            Standard deviation of the predicted values.
+        params: :class:`dict`
+            Parameters of the fitted kernel.
+        """
+
+    # Instantiate the Gaussian Process Regressor
+        if optimizer:
+            gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=0)
+        else:
+            kernel = C(10)*RBF(1.0)
+            gp = GaussianProcessRegressor(kernel, n_restarts_optimizer=15)
+        
+        # Fit the model to the data
+        gp.fit(data, values)
+
+        # Make predictions on new data points
+        # prediction_range = prediction_range.T
+        z_pred, z_std = gp.predict(prediction_range, return_std=True)
+        
+        #calculate discrepancy
+        # information = np.exp(-np.square(z_std))
+        kernel = gp.kernel_
+        params = kernel.get_params()
+        # params = (params['k1'], f"noise level: {params['k2__noise_level']}")
+    
+        return z_pred, z_std, params
+    
+    def plot_interpolation(self, data, values, prediction_range, z_pred, z_std):
+        """
+        Plot the Gaussian Process interpolation.
+
+        Parameters
+        ----------
+        data: :class:`np.ndarray`
+            Array of input data points.
+        values: :class:`np.ndarray`
+            Array of values corresponding to the input data points.
+        prediction_range: :class:`np.ndarray`
+            Array of points where predictions are made.
+        z_pred: :class:`np.ndarray`
+            Predicted values array.
+        z_std: :class:`np.ndarray`
+            Standard deviation of the predicted values.
+        """
+        
+        plt.figure(figsize=(10, 5))
+        plt.plot(data, values, 'r.', markersize=10, label='Observed data')
+        # plt.plot(prediction_range, z_pred.ravel(), 'b-', label='Prediction')
+
+        X_Y_Spline = interp1d(prediction_range.ravel(), z_pred, kind = "cubic")
+        X_ = np.linspace(data.min(), data.max(), 500)
+        Y_ = X_Y_Spline(X_)
+        plt.plot(X_, Y_, 'b-', "Prediction")
+        plt.fill_between(prediction_range.ravel(), 
+                         z_pred - 1.96*z_std, 
+                         z_pred + 1.96*z_std, 
+                         alpha=0.5, label='95% confidence interval')
+        plt.xlabel('Y Position (m)')
+        plt.ylabel('Ground Stiffness (N/m)', labelpad = 10)
+
+        ax = plt.gca()
+        ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+
+        plt.legend()
+        plt.show()
+

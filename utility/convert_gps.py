@@ -80,76 +80,76 @@ def haversine(lat: float, lon: float, ref_lat: float, ref_lon: float):
 
     return b,a
 
-def latlon_to_meters(lat: np.ndarray, lon: np.ndarray, ref_lat: float, ref_lon: float):
-    """Convert latitude and longitude coordinates to meters using the Haversine formula.
+# def latlon_to_meters(lat: np.ndarray, lon: np.ndarray, ref_lat: float, ref_lon: float):
+#     """Convert latitude and longitude coordinates to meters using the Haversine formula.
 
-    Parameters
-    ----------
-    lat: :class:`np.ndarray`
-        Array of latitudes.
-    lon: :class:`np.ndarray`
-        Array of longitudes.
-    ref_lat: :class:`float`
-        Reference latitude.
-    ref_lon: :class:`float`
-        Reference longitude.
+#     Parameters
+#     ----------
+#     lat: :class:`np.ndarray`
+#         Array of latitudes.
+#     lon: :class:`np.ndarray`
+#         Array of longitudes.
+#     ref_lat: :class:`float`
+#         Reference latitude.
+#     ref_lon: :class:`float`
+#         Reference longitude.
 
-    Returns
-    -------
-    distance: :class:`np.ndarray`
-        Array of distances in meters.
-    """
+#     Returns
+#     -------
+#     distance: :class:`np.ndarray`
+#         Array of distances in meters.
+#     """
 
-    # https://en.wikipedia.org/wiki/Haversine_formula 
-    # Look in Formulation for equation
+#     # https://en.wikipedia.org/wiki/Haversine_formula 
+#     # Look in Formulation for equation
     
-    # Earth radius in meters
-    R = 6378137.0
+#     # Earth radius in meters
+#     R = 6378137.0
 
-    # Convert degrees to radians
-    lat = np.deg2rad(lat)
-    lon = np.deg2rad(lon)
-    ref_lat = np.deg2rad(ref_lat)
-    ref_lon = np.deg2rad(ref_lon)
+#     # Convert degrees to radians
+#     lat = np.deg2rad(lat)
+#     lon = np.deg2rad(lon)
+#     ref_lat = np.deg2rad(ref_lat)
+#     ref_lon = np.deg2rad(ref_lon)
 
-    # Haversine formula
-    dlat = lat - ref_lat
-    dlon = lon - ref_lon
+#     # Haversine formula
+#     dlat = lat - ref_lat
+#     dlon = lon - ref_lon
 
-    hav_theta = np.sin(dlat / 2)**2 + np.cos(ref_lat) * np.cos(lat) * np.sin(dlon / 2)**2
+#     hav_theta = np.sin(dlat / 2)**2 + np.cos(ref_lat) * np.cos(lat) * np.sin(dlon / 2)**2
 
-    # Distance in meters
-    distance = 2*R*np.arcsin(np.sqrt(hav_theta))
+#     # Distance in meters
+#     distance = 2*R*np.arcsin(np.sqrt(hav_theta))
 
-    return distance
+#     return distance
 
-def convert_gps_to_meters(longitudes: np.ndarray, latitudes: np.ndarray):
-    """Convert GPS coordinates (longitude and latitude) to meters using the
-    reference point as the minimum of the coordinates.
+# def convert_gps_to_meters(longitudes: np.ndarray, latitudes: np.ndarray):
+#     """Convert GPS coordinates (longitude and latitude) to meters using the
+#     reference point as the minimum of the coordinates.
 
-    Parameters
-    ----------
-    longitudes: :class:`np.ndarray`
-        Array of longitudes.
-    latitudes: :class:`np.ndarray`
-        Array of latitudes.
+#     Parameters
+#     ----------
+#     longitudes: :class:`np.ndarray`
+#         Array of longitudes.
+#     latitudes: :class:`np.ndarray`
+#         Array of latitudes.
 
-    Returns
-    -------
-    x_meters: :class:`np.ndarray`
-        Array of distances in meters along the longitude.
-    y_meters: :class:`np.ndarray`
-        Array of distances in meters along the latitude.
-    """
+#     Returns
+#     -------
+#     x_meters: :class:`np.ndarray`
+#         Array of distances in meters along the longitude.
+#     y_meters: :class:`np.ndarray`
+#         Array of distances in meters along the latitude.
+#     """
 
-    # Determine the reference point (minimum latitude and longitude)
-    ref_lat = np.min(latitudes)
-    ref_lon = np.min(longitudes)
+#     # Determine the reference point (minimum latitude and longitude)
+#     ref_lat = np.min(latitudes)
+#     ref_lon = np.min(longitudes)
 
-    # Calculate distances
-    # For x_meters, latitude is constant (ref_lat) and longitude varies
-    x_meters = latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
-    # For y_meters, longitude is constant (ref_lon) and latitude varies
-    y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
+#     # Calculate distances
+#     # For x_meters, latitude is constant (ref_lat) and longitude varies
+#     x_meters = latlon_to_meters(np.full_like(longitudes, ref_lat), longitudes, ref_lat, ref_lon)
+#     # For y_meters, longitude is constant (ref_lon) and latitude varies
+#     y_meters = latlon_to_meters(latitudes, np.full_like(latitudes, ref_lon), ref_lat, ref_lon)
 
-    return x_meters, y_meters
+#     return x_meters, y_meters

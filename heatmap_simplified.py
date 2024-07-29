@@ -33,13 +33,11 @@ class Heatmap():
 
     """
 
-    def __init__(self, latlon_to_m: bool, length_scale: dict, sigma_f: dict, noise_level: dict, nu: float):
+    def __init__(self, length_scale: dict, sigma_f: dict, noise_level: dict, nu: float, latlon_to_m: bool = True):
         """Initialize the GPRegressor class with the given parameters.
 
         Parameters
         ----------
-        latlon_to_m: :class:`bool`
-            Boolean indicating whether to convert x-y position in lat/lon to meters.
         length_scale: :class:`dict`
             Dictionary mapping leg numbers to corresponding length scale values.
         sigma_f: :class:`float`
@@ -48,6 +46,9 @@ class Heatmap():
             Noise level parameter for the Gaussian Process.
         nu: :class:`float`
             Nu paramater for the Matérn kernel. 
+        latlon_to_m: :class:`bool`, optional
+            Boolean indicating whether to convert x-y position in lat/lon to meters.
+            By default set to True.
         """
         self.latlon_to_m = latlon_to_m
         self.x = np.array([])
@@ -56,7 +57,12 @@ class Heatmap():
         self.length_scale = length_scale
         self.sigma_f = sigma_f
         self.noise_level = noise_level
-        self.nu = nu 
+        self.nu = nu
+        self.x_range = None 
+        self.y_range = None
+        self.z_pred = None
+        self.var = None
+        self.kernel = None
 
     def update_heatmap(self, x: float, y: float, stiff: float): 
         """Update the heatmap model with new data points and perform interpolation.
@@ -71,14 +77,14 @@ class Heatmap():
             Stiffness value of the new data point.
         """
 
-        if stiff < 0:
+        if np.any(stiff) < 0:
             raise ValueError("Stiffness can't be negative")
 
         self.add_points(x, y, stiff)
-        x_range, y_range = self.organize_area(x,y)
-        z_pred, vars = self.perform_kriging(self.x, self.y, self.stiff, x_range, y_range)
+        self.x_range, self.y_range = self.organize_area()
+        self.z_pred, self.var = self.perform_interpolation(self.x, self.y, self.stiff, self.x_range, self.y_range)
 
-        return z_pred
+        return self.z_pred
 
     def add_points(self, x:float, y:float, stiff: float):
 
@@ -94,9 +100,9 @@ class Heatmap():
             Stiffness value of the new data point.
         """
 
-        self.x = np.concatenate(self.x, x)
-        self.y = np.concatenate(self.y, y)
-        self.stiff = np.concatenate(self.stiff, stiff)
+        self.x = np.concatenate([self.x, x])
+        self.y = np.concatenate([self.y, y])
+        self.stiff = np.concatenate([self.stiff, stiff])
 
         if self.latlon_to_m:
             self.x, self.y = self.convert_gps_to_meters(self.x,self.y)
@@ -131,8 +137,8 @@ class Heatmap():
 
         robot_measured_points = np.vstack((x, y)).T
 
-        kernel = self.create_kernel(self.length_scale, self.sigma_f, self.noise_level, self.nu)
-        z_pred, z_std= self.Gaussian_Estimation(robot_measured_points, stiff, vals, kernel=kernel)
+        self.kernel = self.create_kernel()
+        z_pred, z_std= self.Gaussian_Estimation(robot_measured_points, stiff, vals, kernel=self.kernel)
         z_pred = z_pred.reshape(estimated_num, estimated_num).T
         z_std = z_std.reshape(estimated_num, estimated_num).T
 
@@ -143,7 +149,7 @@ class Heatmap():
 
         return z_pred, var
 
-    def create_kernel(self, length_scale: dict, sigma_f: dict, noise_level: dict, nu: float):
+    def create_kernel(self):
         """Create a Gaussian Process kernel based on the given parameters.
 
         Parameters
@@ -168,16 +174,16 @@ class Heatmap():
         # sigma_f – constant value parameter
         # nu – Matern parameter, when equal to 1.5, Matern is equal to RBF
 
-        len_scale_bounds = length_scale["bounds"] # tuple
-        len_scale = length_scale["val"]
-        noise_bounds = noise_level["bounds"] # tuple
-        noise = noise_level["val"]
-        sigma_f_bounds = sigma_f["bounds"] # tuple
-        sigma_f_val = sigma_f["val"] # tuple
+        len_scale_bounds = self.length_scale["bounds"] # tuple
+        len_scale = self.length_scale["val"]
+        noise_bounds = self.noise_level["bounds"] # tuple
+        noise = self.noise_level["val"]
+        sigma_f_bounds = self.sigma_f["bounds"] # tuple
+        sigma_f_val = self.sigma_f["val"] # tuple
 
         # Define the kernel components
         kernel = (C(constant_value=sigma_f_val**2, constant_value_bounds=sigma_f_bounds) 
-                * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=nu) 
+                * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu) 
                 + WhiteKernel(noise_level=noise, noise_level_bounds=noise_bounds))
         
         return kernel
@@ -215,7 +221,7 @@ class Heatmap():
     
         return z_pred, z_std
     
-    def organize_area(self, x: np.ndarray, y: np.ndarray, latlon: bool):
+    def organize_area(self):
 
         r"""Returns ranges x_range and y_range based on whether the area
             will match the input data or not.
@@ -235,7 +241,7 @@ class Heatmap():
                 Range of y values to interpolate over.
         """
 
-        if self.latlon:
+        if not self.latlon_to_m:
             offset = 0.000001
         else: 
             offset = 0.25
@@ -243,11 +249,11 @@ class Heatmap():
         x_range = [0,0]
         y_range = [0,0]
 
-        x_range[0] = np.min(x) - offset
-        x_range[1] = np.max(x) + offset
+        x_range[0] = np.min(self.x) - offset
+        x_range[1] = np.max(self.x) + offset
 
-        y_range[1] = np.max(y) + offset
-        y_range[0] = np.min(y) - offset 
+        y_range[1] = np.max(self.y) + offset
+        y_range[0] = np.min(self.y) - offset 
 
         return x_range, y_range
     

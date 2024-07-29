@@ -3,7 +3,9 @@ import numpy as np
 from utility.parse_csv import CSVParser
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from utility.convert_gps import gps_coords_to_meters, convert_gps_to_meters
+from utility.convert_gps import gps_coords_to_meters
+from scipy.ndimage import rotate
+import matplotlib.colors as mcolors
 
 class Plotter():
     """
@@ -23,7 +25,7 @@ class Plotter():
             Boolean indicating whether coordinates are in latitude and longitude.
         """
      
-    def __init__(self, leg_list: list[str], ):
+    def __init__(self, leg_list: list[str], rotate: int = None):
         """Initialize the Plotter class with the given leg list.
         
         Parameters
@@ -36,6 +38,7 @@ class Plotter():
         self.axs = None
         self.ncols = None
         self.latlon = None 
+        self.rotate = rotate
 
         self.initialize_subplots()
 
@@ -136,8 +139,6 @@ class Plotter():
 
         plt.tight_layout()
         plt.show()
-        
-
 
     def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request) -> tuple[np.ndarray, np.ndarray]:
 
@@ -172,12 +173,12 @@ class Plotter():
 
         estimated_num = 100
         xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimated_num), np.linspace(y_range[0], y_range[1], num=estimated_num)
-        vals = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2]).T
+        prediction_range = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2]).T
 
         robot_measured_points = np.vstack((x, y)).T
 
         kernel = gpregressor.create_kernel(request)
-        z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, vals, optimizer, kernel=kernel)
+        z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, prediction_range, optimizer, kernel=kernel)
         z_pred = z_pred.reshape(estimated_num, estimated_num).T
         z_std = z_std.reshape(estimated_num, estimated_num).T
 
@@ -276,6 +277,9 @@ class Plotter():
             Unit of the field being plotted.
         """
 
+        if self.rotate is not None:
+            field = rotate(field, angle=self.rotate, reshape=True)
+
         if field_name == "Interpolation":
             im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
         else:
@@ -286,13 +290,22 @@ class Plotter():
 
         if match_scale:
             im.norm.autoscale([colormin, colormax])
+
         if field_name == "Interpolation":
-            ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15)
-        ax.set_title(f'{field_name} – {title}')
+            norm = mcolors.Normalize(vmin=colormin, vmax=colormax)
+            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
+            if self.rotate is not None:
+                x_rot, y_rot = self.rotate_points(x,y,self.rotate)
+                sc = ax.scatter(x_rot, y_rot, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
+            # self.fig.colorbar(sc, ax=ax, label='Stiffness', orientation='vertical')
+
+        ax.set_title(f'{field_name} – {title} Leg')
         ax.ticklabel_format(useOffset=False)
         ax.tick_params(axis='both', which='major', labelsize=7)
         ax.xaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=90)
         ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+        ax.set_yticks(ax.get_yticks(), ax.get_yticklabels(), rotation=90)
         cbar = self.fig.colorbar(im, ax=ax, shrink=0.9)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
@@ -315,13 +328,13 @@ class Plotter():
         offset_text.set_size(7)
         offset_text = ax.yaxis.get_offset_text()
         offset_text.set_size(7)
-        if not self.latlon:
-            ax.set_xlabel("X Position (m)",fontsize=10)
-            ax.set_ylabel("Y Position (m)",loc='center',fontsize=10)
-        else: 
-            ax.set_xlabel("Longitude(º)",fontsize=10)
-            ax.xaxis.set_label_coords(0.5, -0.19)
-            ax.set_ylabel("Latitude(º)",loc='center',fontsize=10)
+        # if not self.latlon:
+        #     ax.set_xlabel("X Position (m)",fontsize=10)
+        #     ax.set_ylabel("Y Position (m)",loc='center',fontsize=10)
+        # else: 
+        #     ax.set_xlabel("Longitude(º)",fontsize=10)
+        #     ax.xaxis.set_label_coords(0.5, -0.19)
+        #     ax.set_ylabel("Latitude(º)",loc='center',fontsize=10)
             
     def initialize_subplots(self):
             r"""Sets up rows of subplots based on which legs are being plotted.
@@ -441,3 +454,68 @@ class Plotter():
         global_z_min = np.min(z_pred_list) - 0.1
         
         return global_z_min, global_z_max, global_v_min, global_v_max
+    
+    def rotate_matrix(self, matrix: np.ndarray, theta: int):
+
+        """Rotate a matrix by theta degrees clockwise
+
+            Parameters
+            ----------
+            matrix: :class:`np.ndarray`
+                Matrix to be rotated.
+            theta: :class:`int`
+                Degree to be rotated by.
+
+            Returns
+            -------
+            rot_matrix: :class:`np.ndarray`
+                Rotated matrix 
+        """
+
+        match theta:
+            case 90:
+                rot_matrix = np.flipud(np.transpose(matrix))
+            case 180:
+                rot_matrix = np.flipud(np.fliplr(matrix))
+            case 270:
+                rot_matrix = np.fliplr(np.transpose(matrix))
+            
+        return rot_matrix 
+            
+    def rotate_points(self, x, y, theta):
+        """
+        Rotate points (x, y) by theta degrees clockwise.
+
+        Parameters
+        ----------
+        x: :class:`np.ndarray`
+            x-coordinates of the points.
+        y: :class:`np.ndarray`
+            y-coordinates of the points.
+        theta: :class:`float`
+            Angle in degrees to rotate the points clockwise.
+
+        Returns
+        -------
+        x_rotated, y_rotated: :class:`np.ndarray`, :class:`np.ndarray`
+            Rotated x and y coordinates.
+        """
+        # Convert theta from degrees to radians
+        theta = np.deg2rad(theta)
+
+        # Define the clockwise rotation matrix
+        rotation_matrix = np.array([
+            [np.cos(theta), np.sin(theta)],
+            [-np.sin(theta), np.cos(theta)]
+        ])
+
+        # Stack the x and y coordinates
+        points = np.vstack((x, y))
+
+        # Apply the rotation matrix
+        rotated_points = rotation_matrix.dot(points)
+
+        # Separate the rotated coordinates
+        x_rotated, y_rotated = rotated_points[0, :], rotated_points[1, :]
+
+        return x_rotated, y_rotated
