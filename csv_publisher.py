@@ -8,7 +8,7 @@ class CSVNode(Node): # MODIFY NAME
     def __init__(self):
         super().__init__("csv_node") # MODIFY NAME
 
-        self.publisher = self.create_publisher(Int64, "number", 10)
+        self.publisher = self.create_publisher(Float64MultiArray, "number", 10)
         names = ["time", "lat", "lon","stiff", "r2", "leg"]
         self.data = pandas.read_csv("/Users/natalie/Desktop/heatmap_csvs/2024-6-18_Mh24_Loc1_Path1_10_12_am_Trial3.csv",
                         sep = ",", header=0,names=names, usecols=["lat","lon","stiff"])
