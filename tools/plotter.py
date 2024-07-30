@@ -311,7 +311,7 @@ class Plotter():
         # im = ax.contourf(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
 
         X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
-        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 50), cmap=viridis, colors = 'k', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 50), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
         print(f"{field_name}: {field.shape}")
 
         labels = [cs.levels[i] for i in range(0, len(cs.levels), 5)]
