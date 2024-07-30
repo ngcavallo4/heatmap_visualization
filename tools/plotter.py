@@ -278,21 +278,30 @@ class Plotter():
             Unit of the field being plotted.
         """
 
-        viridis = plt.get_cmap('viridis')
-        viridis.set_under(color='k')
-        viridis.set_over(color='orange')
-
-
         if self.rotate is not None:
             field = rotate(field, angle=self.rotate, reshape=True)
 
-        # plt.contourf([x,y],field,50,cmap = viridis, vmin = )
-
         # if field_name == "Interpolation":
-        #     im = ax.contourf(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
-        #     # plt.contourf([x,y],field,50,cmap = viridis, vmin = )
+        #     im = ax.imshow(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
         # else:
         #     im = ax.imshow(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+
+        # if field_name == "Interpolation":
+        #     if match_scale:
+        #         # setting colormin and max to 
+        #         if np.min(field) < colormin:
+        #             colormin = np.min(field)
+        #         if np.max(stiff) > colormax:
+        #             colormax = np.max(stiff)
+
+        #     # rescaling scatter colors
+        #     norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
+        #     if self.rotate is not None:
+        #         x, y = self.rotate_points(x,y,self.rotate)
+        #     sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
+
+        # # rescaling im colors
+        # im.norm.autoscale([colormin, colormax])
 
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
@@ -307,21 +316,17 @@ class Plotter():
                     colormax = np.max(stiff)
 
         norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
-        # im.norm.autoscale([colormin, colormax])
-        # im = ax.contourf(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
 
         X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
-        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 50), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
         print(f"{field_name}: {field.shape}")
-
         labels = [cs.levels[i] for i in range(0, len(cs.levels), 5)]
-
         cs.clabel(labels, fontsize = '7.0', colors = 'k')
 
         if field_name == "Interpolation":
             if self.rotate is not None:
                 x, y = self.rotate_points(x,y,self.rotate)
-            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap=viridis, s=15, norm = norm)
+            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
 
         ax.set_title(f'{field_name} – {title} Leg')
         ax.ticklabel_format(useOffset=False)

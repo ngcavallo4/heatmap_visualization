@@ -26,7 +26,7 @@ def main():
 
     # {'var %': 0.55, 'transparency': 0.4}
     plotter = Plotter(['0','2'], rotate=None)
-    plotter.plot_heatmap('/Users/natalie/Desktop/heatmap_csvs/2024-6-18_Mh24_Loc1_Path1_10_12_am_Trial3.csv',True, gpregressor=tool,
+    plotter.plot_heatmap('/Users/natalie/Desktop/heatmap_csvs/2024-06-18_Mt24_Loc_1_Path_1_9_36_am_Trial2.csv',True, gpregressor=tool,
                     transparent = None, match_scale=True, latlon = False, optimizer=True)
     # {'var %': 0.95, 'transparency': 0.5}
 start_time = time.time()  
