@@ -23,7 +23,7 @@ class GPRegressor():
         Dictionary mapping leg numbers to corresponding length scale bounds.
     """
     
-    def __init__(self, length_scale: dict, noise_level: float, sigma_f: dict, nu: float, len_scale_bounds: dict, alpha: float):
+    def __init__(self, length_scale: dict, noise_level: float, sigma_f: dict, nu: float, alpha: float):
         """
         Initialize the GPRegressor class with the given parameters.
 
@@ -48,9 +48,8 @@ class GPRegressor():
         self.sigma_f = sigma_f
         self.nu = nu
         self.alpha = alpha
-        self.length_scale_bounds = len_scale_bounds
 
-    def create_kernel(self, request):
+    def create_kernel(self):
         """
         Create a Gaussian Process kernel based on the request identifier.
 
@@ -69,13 +68,9 @@ class GPRegressor():
         # noise_level – Noise level
         # sigma_f – Signal variance
 
-        request_long = str(request + "_long")
 
-        len_scale_bounds = self.length_scale_bounds[request]
-        len_scale = self.length_scale[request]
-
-        # len_scale_long = self.length_scale[request_long] # For rational quadratic, along with alpha
-
+        len_scale_bounds = self.length_scale["bounds"] # tuple
+        len_scale = self.length_scale["val"]
         noise_bounds = self.noise_level["bounds"] # tuple
         noise = self.noise_level["val"]
         sigma_f_bounds = self.sigma_f["bounds"] # tuple
@@ -86,15 +81,6 @@ class GPRegressor():
                 * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu) 
                 + WhiteKernel(noise, noise_bounds))
 
-        # kernel = (C(self.sigma_f**2, (1e-3, 1e3))
-        #         * 0.5 * Matern(length_scale=len_scale, length_scale_bounds=(1e-5,1e5), nu=1.5)
-        #         + RBF(length_scale=len_scale_long,length_scale_bounds=(1e-2,1e2))
-        #         + WhiteKernel(self.noise_level, noise_level_bounds=(1e-5,1)))
-        
-        # kernel = (C(self.sigma_f**2, (1e-3, 1e3)) 
-        #     * RationalQuadratic(length_scale=len_scale_long,length_scale_bounds=(1e-5,1e5), alpha = self.alpha, alpha_bounds = (1e-5,1e5))
-        #     * Matern(length_scale=len_scale, length_scale_bounds=(1e-5,1e5), nu=1.5))
-        
         return kernel
 
     def Gaussian_Estimation(self, data, values, prediction_range,  optimizer: bool, kernel = None):

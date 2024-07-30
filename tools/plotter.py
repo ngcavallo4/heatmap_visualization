@@ -6,6 +6,7 @@ from matplotlib import ticker
 from utility.convert_gps import gps_coords_to_meters
 from scipy.ndimage import rotate
 import matplotlib.colors as mcolors
+from matplotlib.colors import Colormap as colormap 
 
 class Plotter():
     """
@@ -109,12 +110,12 @@ class Plotter():
             stiff_arr_list.append(stiff)
 
             x_range, y_range = self.organize_area(x, y, match_steps)
-            z_pred, var = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request)
+            z_pred, var, grid = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request)
 
             z_pred_list.append(z_pred)
             var_list.append(var)
 
-            results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index)
+            results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid)
             axis_index += 1
 
         if len(self.leg_list) > 1:
@@ -125,17 +126,17 @@ class Plotter():
             combined_request = ",".join(self.leg_list)
 
             x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
-            z_pred_combined, var_combined = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
+            z_pred_combined, var_combined, grid = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
 
             z_pred_list.append(z_pred_combined)
             var_list.append(var_combined)
 
-            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, axis_index)
+            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, axis_index, grid)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
-        for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index) in results.items():
-            self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent)
+        for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid) in results.items():
+            self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
 
         plt.tight_layout()
         plt.show()
@@ -177,7 +178,7 @@ class Plotter():
 
         robot_measured_points = np.vstack((x, y)).T
 
-        kernel = gpregressor.create_kernel(request)
+        kernel = gpregressor.create_kernel()
         z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, prediction_range, optimizer, kernel=kernel)
         z_pred = z_pred.reshape(estimated_num, estimated_num).T
         z_std = z_std.reshape(estimated_num, estimated_num).T
@@ -189,9 +190,9 @@ class Plotter():
         # Stiffness should never be negative, so any negative values we round to zero. 
         z_pred[z_pred < 0] = 0
 
-        return z_pred, var
+        return z_pred, var, robot_measured_points
 
-    def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, transparent: dict=None):
+    def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent: dict=None):
 
         """Plot individual leg with interpolation and variance fields.
         
@@ -239,9 +240,9 @@ class Plotter():
         fields = [('Interpolation', z_pred, zmin, zmax, "Stiffness (N/m)"), ('Variance', var, var_min, var_max, "(N/m)^2")]
         for i, (field_name, field, fmin, fmax, field_unit) in enumerate(fields):
             ax_field = self.axs[i, axis_index] if len(self.leg_list) > 1 else self.axs[i]
-            self.plot_field(ax_field, field, x_range, y_range, z_alpha, match_scale, fmin, fmax, title, x, y, stiff, field_name, field_unit)
+            self.plot_field(ax_field, field, x_range, y_range, z_alpha, match_scale, fmin, fmax, title, x, y, stiff, field_name, field_unit, grid)
     
-    def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name, field_unit):
+    def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name, field_unit, grid):
 
         """Plot a field (interpolation or variance) on a given axis.
         
@@ -277,27 +278,50 @@ class Plotter():
             Unit of the field being plotted.
         """
 
+        viridis = plt.get_cmap('viridis')
+        viridis.set_under(color='k')
+        viridis.set_over(color='orange')
+
+
         if self.rotate is not None:
             field = rotate(field, angle=self.rotate, reshape=True)
 
-        if field_name == "Interpolation":
-            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
-        else:
-            im = ax.imshow(field, origin='lower', cmap='viridis', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+        # plt.contourf([x,y],field,50,cmap = viridis, vmin = )
+
+        # if field_name == "Interpolation":
+        #     im = ax.contourf(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        #     # plt.contourf([x,y],field,50,cmap = viridis, vmin = )
+        # else:
+        #     im = ax.imshow(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
 
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
 
-        if match_scale:
-            im.norm.autoscale([colormin, colormax])
+        if field_name == "Interpolation":
+            if match_scale:
+
+                # setting colormin and max to 
+                if np.min(field) < colormin:
+                    colormin = np.min(field)
+                if np.max(stiff) > colormax:
+                    colormax = np.max(stiff)
+
+        norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
+        # im.norm.autoscale([colormin, colormax])
+        # im = ax.contourf(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+
+        X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
+        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 50), cmap=viridis, colors = 'k', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        print(f"{field_name}: {field.shape}")
+
+        labels = [cs.levels[i] for i in range(0, len(cs.levels), 5)]
+
+        cs.clabel(labels, fontsize = '7.0', colors = 'k')
 
         if field_name == "Interpolation":
-            norm = mcolors.Normalize(vmin=colormin, vmax=colormax)
-            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
             if self.rotate is not None:
-                x_rot, y_rot = self.rotate_points(x,y,self.rotate)
-                sc = ax.scatter(x_rot, y_rot, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
-            # self.fig.colorbar(sc, ax=ax, label='Stiffness', orientation='vertical')
+                x, y = self.rotate_points(x,y,self.rotate)
+            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap=viridis, s=15, norm = norm)
 
         ax.set_title(f'{field_name} – {title} Leg')
         ax.ticklabel_format(useOffset=False)
@@ -306,7 +330,7 @@ class Plotter():
         ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=90)
         ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax.set_yticks(ax.get_yticks(), ax.get_yticklabels(), rotation=90)
-        cbar = self.fig.colorbar(im, ax=ax, shrink=0.9)
+        cbar = self.fig.colorbar(cs, ax=ax, shrink=0.9, extend = 'both')
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
         if field_name == "Variance":
