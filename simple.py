@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.colors as mcolors
+import multiprocessing 
 from heatmap_simplified import Heatmap
 
 # Example data

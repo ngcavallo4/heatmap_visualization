@@ -1,6 +1,6 @@
 from tools.gpregressor import GPRegressor
-from utility.convert_gps import gps_coords_to_meters
-from utility.parse_csv import CSVParser
+from tools.convert_gps import gps_coords_to_meters
+from tools.parse_csv import CSVParser
 import numpy as np
 
 def main():

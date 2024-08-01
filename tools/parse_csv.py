@@ -1,16 +1,6 @@
 import csv
 import os
 import numpy as np
-import utility.convert_gps as gpsconvert
-import pandas 
-
-#
-##
-##
-###
-### If you want to store all your csvs in a folder and just pass in the 
-### filename, put the path to the folder here. 
-PATH = "/Users/natalie/Desktop/heatmap_csvs/"
 
 class CSVParser():
 
@@ -20,21 +10,17 @@ class CSVParser():
 
         Parameters
         ----------
+        path: :class:`os.PathLike`
+            Path to the folder containing CSV files. 
         filepath: :class:`str`
-            Name of the csv file where the data is stored. This file should be
-            stored in /kriging/data. This will only work if you are in /kriging
-            when running your code.
+            Full path of the csv file where the data is stored. 
         data_dict: :class:`dict` 
             Dictionary where data of individual legs is stored. Access it using
-            the index of the leg.For each leg, x-position is stored in column 0,
+            the index of the leg. For each leg, x-position is stored in column 0,
             y-position is stored in column 1, and stiffness is stored in column 2. 
-        data_arr: :class:`list`
-            Array where data of entire traversal is stored. X position is stored
-            in column 0, y position is stored in column 1, stiffness is stored in
-            column 2.
     """
 
-    def __init__(self, filename: str):
+    def __init__(self, path, filename: str):
         """Initialize the CSV class with the given file.
         
         Parameters
@@ -44,10 +30,7 @@ class CSVParser():
         """
 
         self.data_dict = {}
-        self.data_arr = []
-        # self.filepath = os.path.join(PATH, filename) 
-
-        self.filepath = filename
+        self.filepath = os.path.join(path, filename) 
 
         self.extract_data()
 
@@ -57,16 +40,9 @@ class CSVParser():
             GPS coordinates from degrees to microdegrees (x 1 million), 
             because the models really don't like how small the footsteps
             are in terms of degrees. 
-
-            Parameters
-            ----------
-
-            filepath: :class:`os.PathLike`
-                Filepath to csv file.
         """
 
         self.data_dict = {0: [], 1: [], 2: [], 3: []}
-        self.data_arr = []
 
         with open(self.filepath, 'r') as csvfile:
             filereader = csv.reader(csvfile,delimiter=",")
@@ -84,8 +60,6 @@ class CSVParser():
                 
                 # row 1 = lat, row 2 = lon, row 3 = stiff
                 self.data_dict[row_value].append([float(row[2]),float(row[1]),float(row[3])])
-
-        self.data_arr = np.array(self.data_arr)
 
     def convert_gps_to_meters(self):
 

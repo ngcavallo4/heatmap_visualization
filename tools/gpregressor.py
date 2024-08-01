@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker 
 from scipy.interpolate import interp1d
+import scipy.stats 
 
 class GPRegressor():
     """
@@ -76,14 +77,17 @@ class GPRegressor():
         sigma_f_bounds = self.sigma_f["bounds"] # tuple
         sigma_f_val = self.sigma_f["val"] # tuple
 
-        # Define the kernel components
-        kernel = (C(sigma_f_val**2, sigma_f_bounds) 
-                * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu) 
-                + WhiteKernel(noise, noise_bounds))
+        # # Define the kernel components
+        # kernel = (C(sigma_f_val**2, constant_value_bounds=sigma_f_bounds) 
+        #         * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu))
+        #         # + WhiteKernel(noise, noise_bounds))
+
+        kernel = (C(sigma_f_val**2, constant_value_bounds=sigma_f_bounds) 
+                * RBF(length_scale=len_scale, length_scale_bounds=len_scale_bounds))
 
         return kernel
 
-    def Gaussian_Estimation(self, data, values, prediction_range,  optimizer: bool, kernel = None):
+    def Gaussian_Estimation(self, data, values, prediction_range,  optimizer: bool, kernel = None, normalize_by: str = "median"):
         """
         Perform Gaussian Process Regression to fit the model and make predictions.
 
@@ -109,13 +113,24 @@ class GPRegressor():
         params: :class:`dict`
             Parameters of the fitted kernel.
         """
+        match normalize_by:
+            case "median":
+                normalize = np.median(values)
+            case "mean":
+                normalize = np.mean(values)
+            case "mode":
+                scipy.stats.mode(values).mode
+
+        values = np.subtract(values, normalize)
+
+        # values[values < 0] = 0
 
     # Instantiate the Gaussian Process Regressor
-        if optimizer:
-            gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=0)
-        else:
-            kernel = C(10)*RBF(1.0)
-            gp = GaussianProcessRegressor(kernel, n_restarts_optimizer=15)
+        # if optimizer:
+        gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=0)
+        # else:
+        #     kernel = C(10)*RBF(1.0)
+        #     gp = GaussianProcessRegressor(kernel, n_restarts_optimizer=10)
         
         # Fit the model to the data
         gp.fit(data, values)
@@ -128,6 +143,10 @@ class GPRegressor():
         # information = np.exp(-np.square(z_std))
         kernel = gp.kernel_
         params = kernel.get_params()
+
+        # Stiffness should never be negative, so any negative values we round to zero. 
+
+        z_pred = z_pred + normalize
         # params = (params['k1'], f"noise level: {params['k2__noise_level']}")
     
         return z_pred, z_std, params

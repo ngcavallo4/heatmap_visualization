@@ -1,12 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from utility.parse_csv import CSVParser
+from tools.parse_csv import CSVParser
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from utility.convert_gps import gps_coords_to_meters
+from tools.convert_gps import gps_coords_to_meters
 from scipy.ndimage import rotate
 import matplotlib.colors as mcolors
 from matplotlib.colors import Colormap as colormap 
+import os
 
 class Plotter():
     """
@@ -43,11 +44,13 @@ class Plotter():
 
         self.initialize_subplots()
 
-    def plot_heatmap(self, file: str, match_steps:bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
+    def plot_heatmap(self, path: os.PathLike, file: str, match_steps: bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
         """Plot heatmap for the given CSV file using Gaussian Process Regression.
         
         Parameters
         ----------
+        path: :class:`os.PathLike`
+            Path to the folder containing the CSV file.
         file: :class:`str`
             Path to the CSV file.
         match_steps: :class:`bool`
@@ -64,7 +67,7 @@ class Plotter():
             Boolean indicating whether coordinates are in latitude and longitude, by default False.
         """
 
-        csvparser = CSVParser(file)
+        csvparser = CSVParser(path, file)
     
         self.latlon = latlon
         self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
@@ -110,7 +113,7 @@ class Plotter():
             stiff_arr_list.append(stiff)
 
             x_range, y_range = self.organize_area(x, y, match_steps)
-            z_pred, var, grid = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request)
+            z_pred, var, grid = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request, "median")
 
             z_pred_list.append(z_pred)
             var_list.append(var)
@@ -126,7 +129,7 @@ class Plotter():
             combined_request = ",".join(self.leg_list)
 
             x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
-            z_pred_combined, var_combined, grid = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request)
+            z_pred_combined, var_combined, grid = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request, "mean")
 
             z_pred_list.append(z_pred_combined)
             var_list.append(var_combined)
@@ -141,7 +144,7 @@ class Plotter():
         plt.tight_layout()
         plt.show()
 
-    def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request) -> tuple[np.ndarray, np.ndarray]:
+    def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request, normalize_by: str) -> tuple[np.ndarray, np.ndarray]:
 
         """Perform kriging to interpolate data using Gaussian Process Regression.
         
@@ -179,7 +182,7 @@ class Plotter():
         robot_measured_points = np.vstack((x, y)).T
 
         kernel = gpregressor.create_kernel()
-        z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, prediction_range, optimizer, kernel=kernel)
+        z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, prediction_range, optimizer, kernel, normalize_by)
         z_pred = z_pred.reshape(estimated_num, estimated_num).T
         z_std = z_std.reshape(estimated_num, estimated_num).T
 
@@ -187,7 +190,6 @@ class Plotter():
 
         var = np.square(z_std)
 
-        # Stiffness should never be negative, so any negative values we round to zero. 
         z_pred[z_pred < 0] = 0
 
         return z_pred, var, robot_measured_points
@@ -282,9 +284,9 @@ class Plotter():
             field = rotate(field, angle=self.rotate, reshape=True)
 
         # if field_name == "Interpolation":
-        #     im = ax.imshow(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+        #     im = ax.imshow(field, origin='lower', cmap="viridis", extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
         # else:
-        #     im = ax.imshow(field, origin='lower', cmap=viridis, extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+        #     im = ax.imshow(field, origin='lower', cmap="viridis", extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
 
         # if field_name == "Interpolation":
         #     if match_scale:
@@ -318,15 +320,15 @@ class Plotter():
         norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
 
         X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
-        cs = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        im = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
         print(f"{field_name}: {field.shape}")
-        labels = [cs.levels[i] for i in range(0, len(cs.levels), 5)]
-        cs.clabel(labels, fontsize = '7.0', colors = 'k')
+        labels = [im.levels[i] for i in range(0, len(im.levels), 5)]
+        # im.clabel(labels, fontsize = '7.0', colors = 'k')
 
         if field_name == "Interpolation":
             if self.rotate is not None:
                 x, y = self.rotate_points(x,y,self.rotate)
-            sc = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
+            cs = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
 
         ax.set_title(f'{field_name} – {title} Leg')
         ax.ticklabel_format(useOffset=False)
@@ -335,7 +337,7 @@ class Plotter():
         ax.set_xticks(ax.get_xticks(), ax.get_xticklabels(), rotation=90)
         ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
         ax.set_yticks(ax.get_yticks(), ax.get_yticklabels(), rotation=90)
-        cbar = self.fig.colorbar(cs, ax=ax, shrink=0.9, extend = 'both')
+        cbar = self.fig.colorbar(im, ax=ax, shrink=0.9)
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
         if field_name == "Variance":
