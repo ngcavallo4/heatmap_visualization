@@ -1,6 +1,3 @@
-# Any csv files 
-*.csv
-
 # MacOS trash
 .DS_Store
 
