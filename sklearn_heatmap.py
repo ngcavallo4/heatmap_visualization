@@ -23,8 +23,8 @@ def main():
     # sigma_f = {"val": 4, "bounds": (1e-7,1e-5)}
     # noise_level = {"val": 0.2, "bounds": (1e-3, 10)}
 
-    len_scale = {'val': scale,'bounds': (scale/2, scale*100)}
-    sigma_f = {"val": 4, "bounds": (0.2,20)}
+    len_scale = {'val': scale,'bounds': (0.3, 1)}
+    sigma_f = {"val": 4, "bounds": (0.2,4000)}
     noise_level = {"val": 0.2, "bounds": (1e-3, 1e2)}
 
     tool = GPRegressor(len_scale,noise_level,sigma_f, 1.0, alpha=2.5)
