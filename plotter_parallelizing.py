@@ -94,62 +94,42 @@ class Plotter():
             Boolean indicating whether to use an optimizer.
         """
 
-        x_arr_list = []
-        y_arr_list = []
-        stiff_arr_list = []
+        results = {}
 
-        z_pred_list = []
-        var_list = []
-        
-
-        tasks = self.leg_list
+        tasks = [[s, match_steps, gpregressor, match_scale, transparent, optimizer] for s in self.leg_list]
 
         with mp.Pool(processes = mp.cpu_count()) as pool:
-            results = pool.map(self.worker_func(), tasks)
+            results_list = pool.map(self.worker_func, tasks)
+            results[request]
 
-        for request in self.leg_list:
-            x, y, stiff, title = self.csvparser.access_data([request])
-
-            if not self.latlon:
-                x, y = gps_coords_to_meters(x,y)
-                # x, y = convert_gps_to_meters(x,y) # Alternate method 
-
-            x_arr_list.append(x)
-            y_arr_list.append(y)
-            stiff_arr_list.append(stiff)
-
-            x_range, y_range = self.organize_area(x, y, match_steps)
-            z_pred, var, grid = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request, "median")
-
-            z_pred_list.append(z_pred)
-            var_list.append(var)
-
+        for result in results_list:
+            request, z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid = result
             results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid)
 
         if len(self.leg_list) > 1:
-            x_combined = np.concatenate(x_arr_list)
-            y_combined = np.concatenate(y_arr_list)
-            stiff_combined = np.concatenate(stiff_arr_list)
+
+            x_combined = np.concatenate([result[3] for result in results_list])
+            y_combined = np.concatenate([result[4] for result in results_list])
+            stiff_combined = np.concatenate([result[5] for result in results_list])
 
             combined_request = ",".join(self.leg_list)
 
             x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
             z_pred_combined, var_combined, grid = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request, "mean")
 
-            z_pred_list.append(z_pred_combined)
-            var_list.append(var_combined)
+            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, len(self.leg_list) - 1, grid)
 
-            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, axis_index, grid)
+        zmin, zmax, var_min, var_max = self.get_global_color_limits(([result[1] for result in results_list], [result[2] for result in results_list]))
 
-        zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
+        tasks = [(result[0], result[1], result[3], result[4], result[5], result[6], result[7], result[8], result[9], result[10], index, grid, match_scale, zmin, zmax, var_min, var_max, transparent) for index, result in enumerate(results.values())]
 
-        for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid) in results.items():
-            self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
+        with mp.Pool(processes = mp.cpu_count()) as pool:
+            pool.starmap(self.plot_leg, tasks)
 
         plt.tight_layout()
         plt.show()
 
-    def worker_func(self, request: str, match_steps: bool, gpregressor: GPRegressor, optimizer: bool, results: dict):
+    def worker_func(self, request: str, match_steps: bool, gpregressor: GPRegressor, optimizer: bool):
         x, y, stiff, title = self.csvparser.access_data([request])
 
         if not self.latlon:
@@ -213,8 +193,8 @@ class Plotter():
 
         return z_pred, var, robot_measured_points
 
-    def plot_leg(self, axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent: dict=None):
-
+    def plot_leg(self, z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid, match_scale, zmin, zmax, var_min, var_max, transparent: dict=None):
+                
         """Plot individual leg with interpolation and variance fields.
         
         Parameters
@@ -569,3 +549,4 @@ class Plotter():
         x_rotated, y_rotated = rotated_points[0, :], rotated_points[1, :]
 
         return x_rotated, y_rotated
+    

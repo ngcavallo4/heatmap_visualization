@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.colors as mcolors
 import multiprocessing 
-from heatmap_simplified import Heatmap
+from unused.heatmap_simplified import Heatmap
 
 # Example data
 x = np.random.uniform(0, 10, 20)

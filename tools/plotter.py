@@ -483,6 +483,11 @@ class Plotter():
 
         global_z_max = np.max(z_pred_list) + 0.1
         global_z_min = np.min(z_pred_list) - 0.1
+
+        if global_v_min < 0:
+            global_v_min = 0
+        if global_z_min < 0:
+            global_z_min = 0
         
         return global_z_min, global_z_max, global_v_min, global_v_max
     
