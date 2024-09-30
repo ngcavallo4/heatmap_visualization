@@ -24,7 +24,7 @@ def main():
     tool = GPRegressor(len_scale,noise_level,sigma_f, 10.0, alpha=2.5)
 
     # Path to folder containing CSV files
-    PATH = '/Users/natalie/Desktop/heatmap_csvs'
+    PATH = '/Users/natalie/Desktop/LASSIE_Spirit/heatmap_csvs'
 
     # {'var %': 0.55, 'transparency': 0.4}
     plotter = Plotter(['0','2'], rotate=None)
