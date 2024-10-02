@@ -176,8 +176,17 @@ class Plotter():
         """
 
         estimated_num = 100
-        xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimated_num), np.linspace(y_range[0], y_range[1], num=estimated_num)
-        prediction_range = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2]).T
+        # xx1, xx2 = np.linspace(x_range[0], x_range[1], num=estimated_num), np.linspace(y_range[0], y_range[1], num=estimated_num)
+        # prediction_range = np.array([[x1_, x2_] for x1_ in xx1 for x2_ in xx2]).T
+
+        xx1 = np.linspace(x_range[0], x_range[1], num=estimated_num)
+        xx2 = np.linspace(y_range[0], y_range[1], num=estimated_num)
+
+        # Create the meshgrid
+        mesh_x1, mesh_x2 = np.meshgrid(xx1, xx2)
+
+        # Flatten the meshgrid and combine them into a 2xN array
+        prediction_range = np.vstack([mesh_x1.ravel(), mesh_x2.ravel()])
 
         robot_measured_points = np.vstack((x, y)).T
 
