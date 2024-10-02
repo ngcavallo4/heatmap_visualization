@@ -1,8 +1,6 @@
 import csv
-import os
 import numpy as np
 import utility.convert_gps as gpsconvert
-import pandas 
 
 #
 ##

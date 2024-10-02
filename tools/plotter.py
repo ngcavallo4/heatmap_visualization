@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from utility.parse_csv import CSVParser
+from utility.convert_gps import gps_coords_to_meters
 from tools.gpregressor import GPRegressor
 from matplotlib import ticker
-from utility.convert_gps import gps_coords_to_meters
 from scipy.ndimage import rotate
 import matplotlib.colors as mcolors
 

@@ -1,6 +1,7 @@
+import os
+import time
 from tools.gpregressor import GPRegressor
 from tools.plotter import Plotter
-import time
 
 # Notice! You should be in /heatmap_visualization when running your code, and your csv
 # files should live in /heatmap_visualization/data. Otherwise, the code will not run. 
@@ -25,12 +26,17 @@ def main():
 
     tool = GPRegressor(len_scale,noise_level,sigma_f, 1.0, len_scale_bounds, alpha=2.5)
 
+    PATH = "/Users/natalie/Desktop/LASSIE_Spirit/heatmap_csvs"
+    FILE = "combined-2024-06-19_Mh24_Loc2.csv"
+
+    filepath = os.path.join(PATH,FILE)
+
     # {'var %': 0.55, 'transparency': 0.4}
     plotter = Plotter(['0','2'], rotate=None)
-    plotter.plot_heatmap('/Users/natalie/Desktop/heatmap_csvs/2024-06-19x005_Mh24_Loc2_Path4_12_3flagd1.csv',True, gpregressor=tool,
+    plotter.plot_heatmap(filepath,True, gpregressor=tool,
                     transparent = None, match_scale=True, latlon = False, optimizer=True)
     # {'var %': 0.95, 'transparency': 0.5}
-start_time = time.time()  
+start_time = time.time() 
 main()
 end_time = time.time()
 print(f"Elapsed time {end_time - start_time} seconds to calculate & plot")
