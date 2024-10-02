@@ -70,7 +70,9 @@ class Plotter():
         csvparser = CSVParser(path, file)
     
         self.latlon = latlon
-        self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
+        z_pred_dict = self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
+
+        return z_pred_dict
 
     def plot_legs(self, csvparser: CSVParser, match_steps: bool, gpregressor: GPRegressor, match_scale: bool, transparent: dict, optimizer: bool):
 
@@ -138,11 +140,16 @@ class Plotter():
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
+        return_dict = {}
+
         for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid) in results.items():
+            return_dict[title] = z_pred
             self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
 
         plt.tight_layout()
         plt.show()
+
+        return return_dict
 
     def perform_kriging(self, gpregressor, x, y, stiff, x_range, y_range, optimizer, request, normalize_by: str) -> tuple[np.ndarray, np.ndarray]:
 
@@ -253,7 +260,7 @@ class Plotter():
             ax_field = self.axs[i, axis_index] if len(self.leg_list) > 1 else self.axs[i]
             self.plot_field(ax_field, field, x_range, y_range, z_alpha, match_scale, fmin, fmax, title, x, y, stiff, field_name, field_unit, grid)
     
-    def plot_field(self, ax, field, x_range, y_range, alpha, match_scale, colormin, colormax, title, x, y, stiff, field_name, field_unit, grid):
+    def plot_field(self, ax, field, x_range, y_range, alpha, match_scale: bool, colormin, colormax, title, x, y, stiff, field_name, field_unit, grid):
 
         """Plot a field (interpolation or variance) on a given axis.
         
@@ -317,21 +324,34 @@ class Plotter():
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
 
-        norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
-
         X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
-        if match_scale:
+        
+        if not match_scale:
+            min = np.round(np.min(field), decimals = 5)
+            max = np.round(np.max(field), decimals = 5)
+            im = ax.imshow(field, origin='lower', cmap="viridis", extent=(x_range[0], x_range[1], y_range[0], y_range[1]), alpha=alpha)
+            if field_name == "Interpolation":
+                if self.rotate is not None:
+                    x, y = self.rotate_points(x,y,self.rotate)
+                cs = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15)
+        else: 
+            norm = mcolors.Normalize(vmin=min, vmax=max, clip=False)
             im = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
-        else:
-            im = ax.contourf(X, Y, field, levels=np.linspace(np.min(field), np.max(field), 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
-        print(f"{field_name}: {field.shape}")
-        labels = [im.levels[i] for i in range(0, len(im.levels), 5)]
-        # im.clabel(labels, fontsize = '7.0', colors = 'k')
+            if field_name == "Interpolation":
+                if self.rotate is not None:
+                    x, y = self.rotate_points(x,y,self.rotate)
+                cs = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
 
-        if field_name == "Interpolation":
-            if self.rotate is not None:
-                x, y = self.rotate_points(x,y,self.rotate)
-            cs = ax.scatter(x, y, c=stiff, edgecolors='k', cmap='viridis', s=15, norm = norm)
+
+        print(f"]\n{field_name} min: {min}, {field_name} max: {max}\n")
+
+        # norm = mcolors.Normalize(vmin=min, vmax=max, clip=False)
+        # im = ax.contourf(X, Y, field, levels=np.linspace(min, max, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
+
+            # im = ax.contourf(X, Y, field, levels=np.linspace(np.min(field), np.max(field), 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        print(f"{field_name}: {field.shape}")
+        # labels = [im.levels[i] for i in range(0, len(im.levels), 5)]
+        # im.clabel(labels, fontsize = '7.0', colors = 'k')
 
         ax.set_title(f'{field_name} – {title} Leg')
         ax.ticklabel_format(useOffset=False)
@@ -344,15 +364,13 @@ class Plotter():
         cbar.ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
 
         if field_name == "Variance":
-            min_var = np.round(np.min(field), decimals = 5)
-            max_var = np.round(np.max(field), decimals = 5)
-            minor_ticks = [min_var, max_var]
+            minor_ticks = [min, max]
             cbar.ax.yaxis.set_minor_locator(ticker.FixedLocator(minor_ticks))
             cbar.ax.tick_params(which='minor', color='red')
             cbar.ax.yaxis.set_tick_params(which='minor', length=4)
-            cbar.ax.yaxis.set_ticklabels([f"Min: {min_var}", f"Max: {max_var}"], minor=True, color = 'red')
-            print(f"{title} var min: {min_var}\n")
-            print(f"{title} var max: {max_var}\n")
+            cbar.ax.yaxis.set_ticklabels([f"Min: {min}", f"Max: {max}"], minor=True, color = 'red')
+            print(f"{title} var min: {min}\n")
+            print(f"{title} var max: {max}\n")
         if field_name == "Variance":
             cbar.set_label(f'{field_unit}', rotation=270, labelpad = -15)
         else:
