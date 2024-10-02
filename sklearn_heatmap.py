@@ -37,7 +37,4 @@ def main(
     velocity_plotter = vp(stiff_dict, 4.0, 2*math.pi, 40)
     velocity_plotter.plot()
 
-
-
-
 main(PATH, FILE, leg_list, True, False, optimizer=True)
