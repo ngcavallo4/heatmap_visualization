@@ -125,7 +125,7 @@ class GPRegressor():
 
         # values[values < 0] = 0
 
-    # Instantiate the Gaussian Process Regressor
+        # Instantiate the Gaussian Process Regressor
         # if optimizer:
         gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=0)
         # else:

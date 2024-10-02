@@ -192,8 +192,8 @@ class Plotter():
 
         kernel = gpregressor.create_kernel()
         z_pred, z_std, params = gpregressor.Gaussian_Estimation(robot_measured_points, stiff, prediction_range, optimizer, kernel, normalize_by)
-        z_pred = z_pred.reshape(estimated_num, estimated_num).T
-        z_std = z_std.reshape(estimated_num, estimated_num).T
+        z_pred = z_pred.reshape(estimated_num, estimated_num)
+        z_std = z_std.reshape(estimated_num, estimated_num)
 
         print(f"\nLeg {request} params: {params}\n")
 
@@ -317,19 +317,13 @@ class Plotter():
         ax.set_xlim([x_range[0], x_range[1]])
         ax.set_ylim([y_range[0], y_range[1]])
 
-        if field_name == "Interpolation":
-            if match_scale:
-
-                # setting colormin and max to 
-                if np.min(field) < colormin:
-                    colormin = np.min(field)
-                if np.max(stiff) > colormax:
-                    colormax = np.max(stiff)
-
         norm = mcolors.Normalize(vmin=colormin, vmax=colormax, clip=False)
 
         X, Y = np.meshgrid(np.linspace(x_range[0], x_range[1], field.shape[1]), np.linspace(y_range[0], y_range[1], field.shape[0]))
-        im = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        if match_scale:
+            im = ax.contourf(X, Y, field, levels=np.linspace(colormin, colormax, 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]), norm = norm)
+        else:
+            im = ax.contourf(X, Y, field, levels=np.linspace(np.min(field), np.max(field), 70), cmap = 'viridis', origin = 'lower', extent=(x_range[0], x_range[1], y_range[0], y_range[1]))
         print(f"{field_name}: {field.shape}")
         labels = [im.levels[i] for i in range(0, len(im.levels), 5)]
         # im.clabel(labels, fontsize = '7.0', colors = 'k')
