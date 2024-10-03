@@ -26,8 +26,8 @@ class VelocityPlotter():
 
         for index, d_mesh in enumerate(self.d_dict.values()):
 
-            row_index = index // 2
-            col_index = index % 2
+            row_index = index // self.ncols
+            col_index = index % self.ncols
             title = self.find_name(index)
             self.plot_mesh(d_mesh,title, row_index, col_index)
             index += 1
@@ -79,8 +79,10 @@ class VelocityPlotter():
 
             if length <= 2:
                 self.ncols = length
-            else:
+            elif length <= 4:
                 self.ncols = 2
+            else: 
+                self.ncols = 3
 
             self.fig, self.axs = plt.subplots(self.nrows,self.ncols,figsize=(17,7), layout='tight')
 

@@ -6,13 +6,13 @@ from tools.plotter import Plotter
 # Make sure you put your heatmap CSVs in PATH... or it won't work.
 
 PATH = "/Users/natalie/Desktop/LASSIE_Spirit/heatmap_csvs"
-len_scale = {"val": 1, "bounds": (0.001, 10)}
-sigma_f = {"val": 4, "bounds": (1e-4, 10)}
-noise_level = {"val": 0.2, "bounds": (1e-3, 1)}
+len_scale = {"val": 1, "bounds": (0.001, 1)}
+sigma_f = {"val": 4, "bounds": (2, 20)}
+noise_level = {"val": 0.2, "bounds": (1e-3, 10)}
 tool = GPRegressor(len_scale, noise_level, sigma_f, 10.0, alpha=2.5)
 
 FILE = "combined-2024-06-19_Mh24_Loc2.csv"
-leg_list = ["0", "1", "2"]
+leg_list = ["0", "1", "2",'3']
 
 # transparent = {"var %": 0.95, "transparency": 0.5}
 
