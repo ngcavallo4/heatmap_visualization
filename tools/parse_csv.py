@@ -59,7 +59,7 @@ class CSVParser():
                 #                                 float(row[3])])
                 
                 # row 1 = lat, row 2 = lon, row 3 = stiff
-                self.data_dict[row_value].append([float(row[2]),float(row[1]),float(row[3])])
+                self.data_dict[row_value].append([float(row[1]),float(row[2]),float(row[3])])
 
     def convert_gps_to_meters(self):
 

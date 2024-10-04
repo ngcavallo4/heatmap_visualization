@@ -104,23 +104,23 @@ class Plotter():
         axis_index = 0
 
         for request in self.leg_list:
-            x_or_lon, y_or_lat, stiff, title = csvparser.access_data([request])
+            x_or_lat, y_or_lon, stiff, title = csvparser.access_data([request])
 
             if self.convert_latlon:
-                x_or_lon, y_or_lat = gps_coords_to_meters(x_or_lon,y_or_lat)
+                x_or_lat, y_or_lon = gps_coords_to_meters(y_or_lon,x_or_lat)
                 # x, y = convert_gps_to_meters(x,y) # Alternate method 
 
-            x_arr_list.append(x_or_lon)
-            y_arr_list.append(y_or_lat)
+            x_arr_list.append(x_or_lat)
+            y_arr_list.append(y_or_lon)
             stiff_arr_list.append(stiff)
 
-            x_range, y_range = self.organize_area(x_or_lon, y_or_lat, match_steps)
-            z_pred, var, grid = self.perform_kriging(gpregressor, x_or_lon, y_or_lat, stiff, x_range, y_range, optimizer, request, "median")
+            x_range, y_range = self.organize_area(x_or_lat, y_or_lon, match_steps)
+            z_pred, var, grid = self.perform_kriging(gpregressor, x_or_lat, y_or_lon, stiff, x_range, y_range, optimizer, request, "median")
 
             z_pred_list.append(z_pred)
             var_list.append(var)
 
-            results[request] = (z_pred, var, x_or_lon, y_or_lat, stiff, title, x_range, y_range, axis_index, grid)
+            results[request] = (z_pred, var, x_or_lat, y_or_lon, stiff, title, x_range, y_range, axis_index, grid)
             axis_index += 1
 
         if len(self.leg_list) > 1:
@@ -142,9 +142,9 @@ class Plotter():
 
         return_dict = {}
 
-        for request, (z_pred, var, x_or_lon, y_or_lat, stiff, title, x_range, y_range, axis_index, grid) in results.items():
+        for request, (z_pred, var, x_or_lat, y_or_lon, stiff, title, x_range, y_range, axis_index, grid) in results.items():
             return_dict[title] = z_pred
-            self.plot_leg(axis_index, z_pred, var, x_or_lon, y_or_lat, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
+            self.plot_leg(axis_index, z_pred, var, x_or_lat, y_or_lon, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
 
         plt.tight_layout()
         plt.show()
