@@ -108,7 +108,6 @@ class CSVParser():
 
                 case '1':
                     leg_1 = np.array(self.data_dict[1])
-
                     leg1_x = leg_1[:, 0]
                     leg1_y = leg_1[:, 1]
                     leg1_stiff = leg_1[:, 2]

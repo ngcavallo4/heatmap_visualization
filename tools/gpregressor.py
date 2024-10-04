@@ -78,9 +78,9 @@ class GPRegressor():
         sigma_f_val = self.sigma_f["val"] # tuple
 
         # # Define the kernel components
-        kernel = (C(sigma_f_val**2, constant_value_bounds=sigma_f_bounds) 
-                * Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu))
-                # + WhiteKernel(noise, noise_bounds))
+        kernel =  (# C(sigma_f_val**2, constant_value_bounds=sigma_f_bounds) * \
+                    Matern(length_scale=len_scale, length_scale_bounds=len_scale_bounds, nu=self.nu) + \
+                    WhiteKernel(noise, noise_bounds))
 
         # kernel = (C(sigma_f_val**2, constant_value_bounds=sigma_f_bounds) 
         #         * RBF(length_scale=len_scale, length_scale_bounds=len_scale_bounds))
@@ -122,7 +122,11 @@ class GPRegressor():
                 scipy.stats.mode(values).mode
 
         values = np.subtract(values, normalize)
+        print(np.max(values))
+        print(np.min(values))
+        print(normalize) 
 
+        # 1/0
         # values[values < 0] = 0
 
         # Instantiate the Gaussian Process Regressor
