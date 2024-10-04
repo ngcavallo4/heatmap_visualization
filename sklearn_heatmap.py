@@ -7,7 +7,7 @@ from tools.plotter import Plotter
 
 PATH = "/Users/natalie/Desktop/LASSIE_Spirit/heatmap_csvs"
 len_scale = {"val": 1, "bounds": (0.001, 1)}
-sigma_f = {"val": 4, "bounds": (2, 20)}
+sigma_f = {"val": 4, "bounds": (1, 200)}
 noise_level = {"val": 0.2, "bounds": (1e-3, 10)}
 tool = GPRegressor(len_scale, noise_level, sigma_f, 10.0, alpha=2.5)
 
@@ -22,7 +22,7 @@ def main(
     leg_list,
     match_steps: bool = True,
     match_scale: bool = True,
-    latlon: bool = False,
+    latlon: bool = True,
     optimizer: bool = True,
     transparent: dict = None,
     rotate: int = None,
@@ -31,7 +31,7 @@ def main(
     # print(sklearn.__version__)
     plotter = Plotter(leg_list, rotate)
     stiff_dict = plotter.plot_heatmap(
-        path, file, match_steps, tool, match_scale, latlon=latlon, optimizer=optimizer
+        path, file, match_steps, tool, match_scale, convert_latlon=latlon, optimizer=optimizer
     )
 
     velocity_plotter = vp(stiff_dict, 4.0, 2*math.pi, 40)

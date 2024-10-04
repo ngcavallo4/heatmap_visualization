@@ -103,9 +103,6 @@ class CSVParser():
                     leg0_y = leg_0[:,1]
                     leg0_stiff = leg_0[:,2]
                     title = "Front Left"
-
-                    # leg0_x_meters, leg0_y_meters = gpsconvert.gps_to_meters(leg0_y, leg0_x)
-                    # return leg0_x_meters, leg0_y_meters, leg0_stiff, title
                     
                     return leg0_x, leg0_y, leg0_stiff, title
 
@@ -117,9 +114,6 @@ class CSVParser():
                     leg1_stiff = leg_1[:, 2]
                     title = "Back Left"
 
-                    # # leg1_x_meters, leg1_y_meters = gpsconvert.gps_to_meters(leg1_y, leg1_x)
-                    # return leg1_x_meters, leg1_y_meters, leg1_stiff, title
-
                     return leg1_x, leg1_y, leg1_stiff, title
                 
                 case '2':
@@ -129,9 +123,6 @@ class CSVParser():
                     leg2_y = leg_2[:, 1]
                     leg2_stiff = leg_2[:, 2]
                     title = "Front Right"
-
-                    # leg2_x_meters, leg2_y_meters = gpsconvert.gps_to_meters(leg2_y, leg2_x)
-                    # return leg2_x_meters, leg2_y_meters, leg2_stiff, title
                 
                     return leg2_x, leg2_y, leg2_stiff, title
 
@@ -142,9 +133,6 @@ class CSVParser():
                     leg3_y = leg_3[:, 1]
                     leg3_stiff = leg_3[:, 2]
                     title = "Back Right"
-
-                    # leg3_x_meters, leg3_y_meters = gpsconvert.gps_to_meters(leg3_y, leg3_x)
-                    # return leg3_x_meters, leg3_y_meters, leg3_stiff, title
                 
                     return leg3_x, leg3_y, leg3_stiff, title
 

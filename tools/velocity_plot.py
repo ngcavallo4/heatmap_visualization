@@ -55,8 +55,8 @@ class VelocityPlotter():
         nrows, ncols = d_mesh.shape
         extent = (0, ncols, 0, nrows)
 
-        im = ax.imshow(velocity_grid, cmap = 'viridis', origin = 'lower', extent=extent)
-        ax.set_title(f'{title}')
+        im = ax.imshow(velocity_grid, cmap = 'magma', origin = 'lower', extent=extent)
+        ax.set_title(f'Velocity - {title}')
         ax.set_xlabel("D (depth of insertion, m)")
         ax.set_ylabel("H (height to belly, m)")
         ax.ticklabel_format(useOffset=False)

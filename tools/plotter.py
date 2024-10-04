@@ -39,12 +39,12 @@ class Plotter():
         self.fig = None
         self.axs = None
         self.ncols = None
-        self.latlon = None 
+        self.convert_latlon = None 
         self.rotate = rotate
 
         self.initialize_subplots()
 
-    def plot_heatmap(self, path: os.PathLike, file: str, match_steps: bool, gpregressor: GPRegressor, match_scale: bool = False, transparent: dict = None, optimizer: bool = False, latlon: bool = False):
+    def plot_heatmap(self, path: os.PathLike, file: str, match_steps: bool, gpregressor: GPRegressor, match_scale: bool = True, transparent: dict = None, optimizer: bool = False, convert_latlon: bool = True):
         """Plot heatmap for the given CSV file using Gaussian Process Regression.
         
         Parameters
@@ -69,7 +69,7 @@ class Plotter():
 
         csvparser = CSVParser(path, file)
     
-        self.latlon = latlon
+        self.convert_latlon = convert_latlon
         z_pred_dict = self.plot_legs(csvparser, match_steps, gpregressor, match_scale, transparent, optimizer)
 
         return z_pred_dict
@@ -104,23 +104,23 @@ class Plotter():
         axis_index = 0
 
         for request in self.leg_list:
-            x, y, stiff, title = csvparser.access_data([request])
+            x_or_lon, y_or_lat, stiff, title = csvparser.access_data([request])
 
-            if not self.latlon:
-                x, y = gps_coords_to_meters(x,y)
+            if self.convert_latlon:
+                x_or_lon, y_or_lat = gps_coords_to_meters(x_or_lon,y_or_lat)
                 # x, y = convert_gps_to_meters(x,y) # Alternate method 
 
-            x_arr_list.append(x)
-            y_arr_list.append(y)
+            x_arr_list.append(x_or_lon)
+            y_arr_list.append(y_or_lat)
             stiff_arr_list.append(stiff)
 
-            x_range, y_range = self.organize_area(x, y, match_steps)
-            z_pred, var, grid = self.perform_kriging(gpregressor, x, y, stiff, x_range, y_range, optimizer, request, "median")
+            x_range, y_range = self.organize_area(x_or_lon, y_or_lat, match_steps)
+            z_pred, var, grid = self.perform_kriging(gpregressor, x_or_lon, y_or_lat, stiff, x_range, y_range, optimizer, request, "median")
 
             z_pred_list.append(z_pred)
             var_list.append(var)
 
-            results[request] = (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid)
+            results[request] = (z_pred, var, x_or_lon, y_or_lat, stiff, title, x_range, y_range, axis_index, grid)
             axis_index += 1
 
         if len(self.leg_list) > 1:
@@ -142,9 +142,9 @@ class Plotter():
 
         return_dict = {}
 
-        for request, (z_pred, var, x, y, stiff, title, x_range, y_range, axis_index, grid) in results.items():
+        for request, (z_pred, var, x_or_lon, y_or_lat, stiff, title, x_range, y_range, axis_index, grid) in results.items():
             return_dict[title] = z_pred
-            self.plot_leg(axis_index, z_pred, var, x, y, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
+            self.plot_leg(axis_index, z_pred, var, x_or_lon, y_or_lat, stiff, x_range, y_range, title, match_scale, zmin, zmax, var_min, var_max, grid, transparent)
 
         plt.tight_layout()
         plt.show()
@@ -439,7 +439,7 @@ class Plotter():
             y_range: :class:`list[float]` 
                 Range of y values to interpolate over.
         """
-        if self.latlon:
+        if self.convert_latlon:
             offset = 0.000001
         else: 
             offset = 0.25
