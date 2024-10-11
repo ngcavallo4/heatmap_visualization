@@ -41,7 +41,7 @@ class Plotter():
         self.ncols = None
         self.convert_latlon = None 
         self.rotate = rotate
-
+        self.plot_all_legs = True
         self.initialize_subplots()
 
     def plot_heatmap(self, path: os.PathLike, file: str, match_steps: bool, gpregressor: GPRegressor, match_scale: bool = True, transparent: dict = None, optimizer: bool = False, convert_latlon: bool = True):
@@ -122,21 +122,6 @@ class Plotter():
 
             results[request] = (z_pred, var, x_or_lat, y_or_lon, stiff, title, x_range, y_range, axis_index, grid)
             axis_index += 1
-
-        if len(self.leg_list) > 1:
-            x_combined = np.concatenate(x_arr_list)
-            y_combined = np.concatenate(y_arr_list)
-            stiff_combined = np.concatenate(stiff_arr_list)
-
-            combined_request = ",".join(self.leg_list)
-
-            x_range_combined, y_range_combined = self.organize_area(x_combined, y_combined, match_steps)
-            z_pred_combined, var_combined, grid = self.perform_kriging(gpregressor, x_combined, y_combined, stiff_combined, x_range_combined, y_range_combined, optimizer, combined_request, "mean")
-
-            z_pred_list.append(z_pred_combined)
-            var_list.append(var_combined)
-
-            results[combined_request] = (z_pred_combined, var_combined, x_combined, y_combined, stiff_combined, 'Combined', x_range_combined, y_range_combined, axis_index, grid)
 
         zmin, zmax, var_min, var_max = self.get_global_color_limits(z_pred_list, var_list)
 
@@ -401,8 +386,8 @@ class Plotter():
                     self.ncols = len(self.leg_list)
             elif len(self.leg_list) == 1:
                 self.ncols = 1
-
-            self.fig, self.axs = plt.subplots(nrows,self.ncols,figsize=(17,7), layout='tight')
+            
+            self.fig, self.axs = plt.subplots(nrows,self.ncols,layout='tight')
     
     def organize_area(self, x, y, match_steps: bool, x_input_range = None,
                                                         y_input_range = None):

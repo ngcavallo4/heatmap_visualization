@@ -3,21 +3,18 @@ from tools.velocity_plot import VelocityPlotter as vp
 from tools.gpregressor import GPRegressor
 from tools.plotter import Plotter
 
-# Make sure you put your heatmap CSVs in PATH... or it won't work.
-
-PATH = "/home/sandy/loco_sensing_analysis"
-PATH = "/home/sandy/Downloads/heatmap_data"
 len_scale = {"val": 1, "bounds": (0.2, 1.0)}
 sigma_f = {"val": 4, "bounds": (1, 100)}
 noise_level = {"val": 0.2, "bounds": (1e-3, 10)}
 tool = GPRegressor(len_scale, noise_level, sigma_f, 10.0, alpha=2.5)
 
+PATH = "/home/sandy/loco_sensing_analysis"
 FILE = "test_data.csv"
 LAT_LON=False
-FILE = "combined-2024-06-19_Mh24_Loc2.csv"
-LAT_LON=True
-leg_list = ["0", "2"]
-# leg_list = ["0", "1", "2", "3"]
+# PATH = "/home/sandy/Downloads/heatmap_data"
+# FILE = "combined-2024-06-19_Mh24_Loc2.csv"
+# LAT_LON=True
+leg_list = ["02"]
 
 
 # transparent = {"var %": 0.95, "transparency": 0.5}
@@ -54,4 +51,5 @@ def main(
     
     velocity_plotter.plot()
 
-main(PATH, FILE, leg_list, True, False,latlon=LAT_LON,optimizer=True)
+if __name__ == "__main__":
+    main(PATH, FILE, leg_list, True, False,latlon=LAT_LON,optimizer=True)

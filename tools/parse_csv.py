@@ -1,5 +1,6 @@
 import csv
 import os
+import re
 import numpy as np
 
 class CSVParser():
@@ -54,10 +55,6 @@ class CSVParser():
             # Converting degrees to microdegrees
             for row in filereader:
                 row_value = int(row[5]) 
-                # self.data_dict[row_value].append([float(row[1])*1000000,
-                #                                 float(row[2])*1000000, 
-                #                                 float(row[3])])
-                
                 # row 1 = lat, row 2 = lon, row 3 = stiff
                 self.data_dict[row_value].append([float(row[1]),float(row[2]),float(row[3])])
 
@@ -69,7 +66,7 @@ class CSVParser():
             next(filereader)
 
 
-    def access_data(self, request: list[str]):
+    def access_data(self, request: list[str]|str):
 
         r"""Enables access to the correct entries of the dictionary of arrays
             for single leg plotting and combined leg plotting. 
@@ -77,8 +74,7 @@ class CSVParser():
             Parameters
             ----------
             request: :class:`str`
-                The leg/legs that are being requested. If all legs are being
-                requested, enter 'all'. 
+                The leg/legs that are being requested.
             
             Returns
             -------
@@ -92,47 +88,32 @@ class CSVParser():
                 Title of request, for plotting purposes.
 
         """
+        if isinstance(request,list):
+            request=request[0]
+        for req in request:
+            try:
+                float(req)
+            except ValueError as e:
+                print("Requests must contain valid indices")
+                raise e
+        
+        leg_data = []
+        titles = []
+        LEG_OPTIONS = {"0":(0,"Front Left"),
+                       "1":(1,"Back Left"),
+                       "2":(2,"Front Right"),
+                       "3":(3,"Back Right")}
+        
+        for leg,leg_info in LEG_OPTIONS.items():
+            if leg in request:
+                leg_data.extend(self.data_dict[leg_info[0]])
+                titles.append(leg_info[1])
+        title = '/'.join(titles)
+        
+        leg_data = np.array(leg_data)
 
-        for s in request:
-
-            match s:
-                case '0':
-                    leg_0 = np.array(self.data_dict[0])
-
-                    leg0_x = leg_0[:,0]
-                    leg0_y = leg_0[:,1]
-                    leg0_stiff = leg_0[:,2]
-                    title = "Front Left"
-                    
-                    return leg0_x, leg0_y, leg0_stiff, title
-
-                case '1':
-                    leg_1 = np.array(self.data_dict[1])
-                    leg1_x = leg_1[:, 0]
-                    leg1_y = leg_1[:, 1]
-                    leg1_stiff = leg_1[:, 2]
-                    title = "Back Left"
-
-                    return leg1_x, leg1_y, leg1_stiff, title
-                
-                case '2':
-                    leg_2 = np.array(self.data_dict[2])
-
-                    leg2_x = leg_2[:, 0]
-                    leg2_y = leg_2[:, 1]
-                    leg2_stiff = leg_2[:, 2]
-                    title = "Front Right"
-                
-                    return leg2_x, leg2_y, leg2_stiff, title
-
-                case '3':
-                    leg_3 = np.array(self.data_dict[3])
-
-                    leg3_x = leg_3[:, 0]
-                    leg3_y = leg_3[:, 1]
-                    leg3_stiff = leg_3[:, 2]
-                    title = "Back Right"
-                
-                    return leg3_x, leg3_y, leg3_stiff, title
-
-
+        leg_data_x = leg_data[:,0]
+        leg_data_y = leg_data[:,1]
+        leg_data_stiff = leg_data[:,2]
+        
+        return leg_data_x, leg_data_y, leg_data_stiff, title
